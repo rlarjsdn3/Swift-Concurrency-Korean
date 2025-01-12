@@ -1,6 +1,6 @@
 # Table of contents
 
-* [README](README.md)
+* [The Swift Programming Language (6)](README.md)
 
 ## Welcome to Swift
 
