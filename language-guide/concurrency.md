@@ -1,5 +1,4 @@
 ---
-icon: swift
 description: Perform asynchronous operations.
 ---
 
