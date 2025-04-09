@@ -1,13 +1,11 @@
 # Table of contents
 
-* [The Swift Programming Language (6)](README.md)
+* [Swift Concurrency (6)](README.md)
 
-## Welcome to Swift
+## Overview
 
-* [About Swift](welcome-to-swift/about-swift.md)
-* [Version Compatibility](welcome-to-swift/version-compatibility.md)
-<!-- * [A Swift Tour](welcome-to-swift/a-swift-tour.md) -->
+* [Overview](welcome-to-swift/about-swift.md)
 
 ## Language Guide
 
-* [Concurrency](language-guide/concurrency.md)
+* [Task](language-guide/Task.md)
