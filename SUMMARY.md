@@ -26,4 +26,4 @@
 
 ## Appendix
 
-* [Citations](appendix)/Citations.md)
+* [Citations](appendix/Citations.md)

@@ -11,16 +11,26 @@ Swift Concurrency는 기존 동시성 프로그래밍 모델의 한계를 극복
 
 # Sendable
 
-`Sendable`은 서로 다른 동시 컨텍스트(Concurrent Context) 간에 데이터 경합의 위험 없이 안전하게 값을 공유할 수 있는지를 검증하는 **마커 프로토콜(Marker Protocol)**[^1]입니다. Swift 컴파일러는 `Sendable`을 따르지 않는 값이 서로 다른 동시 컨텍스트 간에 주고받으려는 시도를 감지하면, 컴파일 타임에 오류를 발생시켜 개발자에게 이를 즉시 알려줍니다. 이 프로토콜은 구현해야 할 메서드나 프로퍼티가 없으며, 해당 타입이 동시성 환경에서도 안전하게 사용될 수 있음을 나타내는 역할을 합니다.
+`Sendable`은 서로 다른 동시 컨텍스트(Concurrent Context) 간에 데이터 경합의 위험 없이 안전하게 값을 공유할 수 있는지를 검증하는 마커 프로토콜(Marker Protocol)입니다. Swift 컴파일러는 `Sendable`을 따르지 않는 값이 서로 다른 동시 컨텍스트 간에 주고받으려는 시도를 감지하면, 컴파일 타임에 오류를 발생시켜 개발자에게 이를 즉시 알려줍니다. 이 프로토콜은 구현해야 할 메서드나 프로퍼티가 없으며, 해당 타입이 동시성 환경에서도 안전하게 사용될 수 있음을 나타내는 역할을 합니다.
 
 ## @unchecked Sendable
 
+어떤 타입이 동시성 환경에서 안전하게 동작한다고 개발자가 판단하는 경우, `@unchecked Sendable`을 사용해 컴파일러의 동시성 검사를 비활성화할 수 있습니다. 이 속성은 컴파일러가 타입의 스레드 안전성을 검증하지 않기 때문에, 반드시 개발자의 책임 하에 제한적으로 사용해야 합니다. 부주의하게 사용할 경우, 데이터 경합 등 동시성 문제를 초래할 수 있으므로 주의가 필요합니다.
 
-`Sendable` 앞에 `@unchecked`를 붙이면 다음과 같은 의미를 갖습니다: **"이 타입은 `Sendable`을 채택하지만, 컴파일러가 준수 조건을 검사하지 않아도 괜찮아. 나는(개발자) 이 타입이 스레드에 안전하다는 걸 보장할 수 있어."**
+`@unchecked Sendable`은 주로 `NSLock`, `DispatchSemaphore`, 직렬 디스패치 큐와 같은 동기화 메커니즘을 타입 내부에 직접 구현한 경우에 사용됩니다.
 
-이 키워드는 주로 `NSLock`, `DispatchSemaphore`, 직렬 디스패치 큐 등을 사용해 내부 동기화(synchronization)를 직접 구현한 타입에 사용됩니다. 개발자가 직접 적절한 동기화 매커니즘을 제공하고 있다고 판단되는 경우, 컴파일러의 검사 없이도 `Sendable`을 준수할 수 있게 해줍니다.
-
-단, 컴파일러가 동시성 검사를 수행하지 않기 때문에, `@unchecked Sendable`은 **개발자 책임 하에 사용**해야 하며, 부주의할 경우 데이터 경합이나 동시성 오류를 유발할 수 있습니다.
+```swift
+final class Counter: @unchecked Sendable {
+    private let lock = NSLock()
+    var value = 0
+    
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+}
+```
 
 
 
@@ -36,7 +46,7 @@ Swift Concurrency는 기존 동시성 프로그래밍 모델의 한계를 극복
 
 ## Struct And Enumeration
 
-구조체나 열거형이 `Sendable` 프로토콜 준수하려면, 모든 저장 프로퍼티나 연관 값(Associated Value)이 `Sendable`이어야 합니다. 구조체와 열거형이 `frozen`[^2] 상태이거나, 접근 제어자가 `public`이 아니며 `@usableFromInline`[^3] 속성이 없다면, Swift 컴파일러는 이 타입을 암시적으로 `Sendable`이라고 마킹합니다.
+구조체나 열거형이 `Sendable` 프로토콜 준수하려면, 모든 저장 프로퍼티나 연관 값(Associated Value)이 `Sendable`이어야 합니다. 구조체와 열거형이 `frozen` 상태이거나, 접근 제어자가 `public`이 아니며 `@usableFromInline` 속성이 없다면, Swift 컴파일러는 이 타입을 암시적으로 `Sendable`이라고 마킹합니다.
 
 ```swift
 struct User: Sendable {
@@ -49,15 +59,6 @@ struct User: Sendable {
 
 한편, `Sendable`을 따르지 않는 저장 프로퍼티나 연관 값이 있는 구조체나 열거형이라면 컴파일러는 오류를 발생시킵니다. 하지만 개발자가 해당 타입이 동시성 환경에서 안전하다고 판단하는 경우, `@unchecked Sendable`을 명시적으로 마킹하여 컴파일 동시성 검사를 비활성화할 수 있습니다.
 
-```swift
-final class Logger {
-    func log(_ message: String) { print(message) }
-}
-
-struct LogContainer: @unchecked Sendable {
-    let logger: Logger // 💥 Logger 타입은 `Sendable`하지 않습니다.
-}
-```
 
 ## Class
 
@@ -118,7 +119,7 @@ final class SafeDict<Key, Value>: @unchecked Sendable where Key: Hashable & Send
 
 함수(또는 클로저)도 `Sendable`이 될 수 있습니다. 다만, 함수 타입은 일반적인 타입처럼 프로토콜을 채택할 수 없기 때문에, 이를 표현하기 위해 `@Sendable`이라는 특별한 속성이 도입되었습니다. `@Sendable`은 함수의 타입 어노테이션이나 클로저 매개변수 앞에 붙여, 해당 함수가 동시성 환경에서도 안전하게 실행될 수 있음을 나타냅니다.
 
-`@Sendable`로 마킹된 함수나 클로저는 서로 다른 동시 컨텍스트 간에 전달될 수 있기 때문에, 오직 불변(immutable)한 값만 캡처할 수 있으며, 캡처된 모든 값 또한 `Sendable` 프로토콜을 준수해야 합니다. 이러한 제약은 `Sendable`하지 않은 값이 **액터 경계(Actor Boundary)**를 넘어 이동하거나 실행되는 것을 방지하여, 데이터 경합 등 예측 불가능한 동작을 사전에 차단하는 데 중요한 역할을 합니다.
+`@Sendable`로 마킹된 함수나 클로저는 서로 다른 동시 컨텍스트 간에 전달될 수 있기 때문에, 오직 불변(immutable)한 값만 캡처할 수 있으며, 캡처된 모든 값 또한 `Sendable` 프로토콜을 준수해야 합니다. 이러한 제약은 `Sendable`하지 않은 값이 액터 경계(Actor Boundary)를 넘어 이동하거나 실행되는 것을 방지하여, 데이터 경합 등 예측 불가능한 동작을 사전에 차단하는 데 중요한 역할을 합니다.
 
 ```swift
 @MainActor
@@ -183,7 +184,7 @@ func incrementParellel() async {
 ```
 
 {% hint style="info" %}
-**Note** Swift 6.0부터는 `@Sendable` 키워드가 `sending`으로 변경되었습니다.
+**Note** Swift 6.0부터는 `@Sendable` 키워드가 `sending`으로 변경되었습니다. ~~`sending`에 관한 자세한 내용은 [지역 기반 격리]()를 참조하세요.~~
 {% endhint %}
 
 
