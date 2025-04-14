@@ -82,19 +82,19 @@ code block
 ---
 
 {% hint style="info" %}
-**Info hints** are great for showing general information, or providing tips and tricks.
+**Info** are great for showing general information, or providing tips and tricks.
 {% endhint %}
 
 {% hint style="success" %}
-**Success hints** are good for showing positive actions or achievements.
+**Success** are good for showing positive actions or achievements.
 {% endhint %}
 
 {% hint style="warning" %}
-**Warning hints** are good for showing important information or non-critical warnings.
+**Warning** are good for showing important information or non-critical warnings.
 {% endhint %}
 
 {% hint style="danger" %}
-**Danger hints** are good for highlighting destructive actions or raising attention to critical information.
+**Danger** are good for highlighting destructive actions or raising attention to critical information.
 {% endhint %}
 
 {% hint style="info" %}

@@ -120,7 +120,7 @@ extension MyDelegate: UICollectionViewDelegate {
 
 # Returning Results from a Task
 
-`Task`는 작업을 완료하면 결과값을 반환할 수 잇으며, 이 결과값은 `value` 프로퍼티를 통해 접근할 수 있습니다. 결과값은 얻는 데 시간이 걸릴 수 있으므로, 해당 프로퍼티에 접근할 때는 `await` 키워드를 붙여야 합니다. 또한 `Task`가 예외를 던질 수 있으므로, 예외 처리를 위해 `try` 키워드도 함께 사용해야 합니다. `Task`는 오직 `Sendable`한 값만 반환할 수 있습니다. 그리고 `value` 프로퍼티를 호출하면 (내부) `Task`의 우선순위는 (외부) `Task`의 우선순위 수준으로 일시적으로 승격됩니다.
+`Task`는 작업을 완료하면 결과값을 반환할 수 잇으며, 이 결과값은 `value` 프로퍼티를 통해 접근할 수 있습니다. 결과값은 얻는 데 시간이 걸릴 수 있으므로, 해당 프로퍼티에 접근할 때는 `await` 키워드를 붙여야 합니다. 만약 `Task`가 예외를 던질 수 있다면, 예외 처리를 위해 `await` 키워드 앞에 `try` 키워드도 함께 작성해야 합니다. `Task`는 오직 `Sendable`한 값만 반환할 수 있습니다. 그리고 `value` 프로퍼티를 호출하면 (내부) `Task`의 우선순위는 (외부) `Task`의 우선순위 수준으로 일시적으로 승격됩니다.
 
 ```swift
 Task(priority: .high) {
@@ -132,6 +132,10 @@ Task(priority: .high) {
 }
 // Print "김소월의 생일은 19980321입니다."
 ```
+
+{% hint style="info" %}
+**Info** `Sendable` 프로토콜은 서로 다른 동시 컨텍스트(Concurrent Context)에서 안전하게 공유할 수 있는 타입입니다. 자세한 내용은 [Sendable](programming-guide/Sendable.md) 문서를 참조하세요.
+{% endhint %}
 
 
 # Task Priority
