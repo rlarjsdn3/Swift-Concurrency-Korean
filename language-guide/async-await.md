@@ -126,7 +126,7 @@ func downloadImage(from url: String) async throws -> UIImage? {
 
 {% hint style=“info” %}
 **Note**
-Swift Concurrency에서는 작업마다 새로운 스레드를 생성하지 않고, 물리적인 CPU 코어 수에 맞춰 제한된 수의 스레드만을 생성해 비동기 작업을 처리합니다. 이로 인해 하나의 코어가 여러 스레드를 번갈아 실행할 때 발생하는 스레드 컨텍스트 스위칭이 최소화되어, 보다 안정적이고 높은 성능을 얻을 수 있습니다. 이러한 구조는 작업들이 스레드를 서로 양보하며 협력적으로 사용하는 구조로, 협력적 스레드 풀(Cooperative Thread Pool)이라고 불립니다.
+Swift Concurrency에서는 작업마다 새로운 스레드를 생성하지 않고, 물리적인 CPU 코어 수에 맞춰 제한된 수의 스레드만을 생성해 비동기 작업을 처리합니다. 이로 인해 하나의 코어가 여러 스레드를 번갈아 실행할 때 발생하는 스레드 컨텍스트 스위칭이 최소화되어, 보다 안정적이고 높은 성능을 얻을 수 있습니다. 이는 작업들이 스레드를 서로 양보하며 협력적으로 사용한다는 의미에서 협력적 스레드 풀(Cooperative Thread Pool)이라고 불립니다.
 {% endhint %}
 
 {% hint style="info" %}
@@ -134,7 +134,7 @@ Swift Concurrency에서는 작업마다 새로운 스레드를 생성하지 않�
 {% endhint %}
 
 
-## Valid Contexts for Calling Async Functions
+# Valid Contexts for Calling Async Functions
 
 비동기 컨텍스트는 실행에 필요한 액터(Actor), Task-Local, 우선순위 등의 메타데이터를 포함하고 있습니다. 이러한 정보들은 비동기 작업의 실행을 추적하고 제어하는 데 사용되므로, Swift에서는 모든 비동기 작업이 반드시 이러한 메타데이터를 가진 비동기 컨텍스트 내에서 수행되어야 합니다. 따라서 `await`이 필요한 비동기 함수는 동기 컨텍스트에서는 호출할 수 없으며, 반드시 비동기 컨텍스트 안에서 호출되어야 합니다. Swift에서 비동기 컨텍스트에 해당하는 대표적인 예시는 다음과 같습니다.
 
@@ -144,3 +144,9 @@ Swift Concurrency에서는 작업마다 새로운 스레드를 생성하지 않�
 
 * 구조화되지 않은 작업(Unstructured Task) 내부
 
+
+# Understanding Task Suspension and Resumption
+
+{% hint style="info" %}
+**Info** 이 섹션은 현재 작성 중입니다.
+{% endhint %}

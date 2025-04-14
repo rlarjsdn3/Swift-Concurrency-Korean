@@ -11,7 +11,7 @@
 * [Task](language-guide/Task.md)
 * [async-await](language-guide/async-await.md)
 <!--* [Structured Concurrency](language-guide/Structured-Concurrency.md)-->
-<!--* [Continuation](language-guide/Continuation.md)-->
+* [Continuation](language-guide/Continuation.md)
 <!--* [Cancellation](language-guide/Cancellation.md)-->
 * [Task-Local](language-guide/Task-Local.md)
 <!--* [AsyncSequence/AsyncStream](language-guide/AsyncSequence-AsyncStream.md)-->
