@@ -78,8 +78,6 @@ final class Author: Sendable {
 }
 ```
 
-위 예제는
-
 한편, `@MainActor`로 마킹된 클래스는 객체 상태에 대한 모든 접근이 메인 스레드에서 일어나도록 보장되기 때문에, 암시적으로 `Sendable`로 간주될 수 있습니다. 이 경우 해당 클래스가 `Sendable`을 따르지 않거나, 가변 저장 프로퍼티를 가지고 있어도 문제가 되지 않습니다.
 
 위 조건을 충족하지 않는 클래스라도, 내부에 _직렬 디스패치 큐_, `NSLock`, `DispatchSemaphore` 등의 동기화 메커니즘을 직접 구현한 경우에는 (개발자가 타입의 스레드 안전성을 스스로 보장한다는 전제 하에) `@unchecked Sendable`을 명시적으로 마킹할 수 있습니다.
@@ -103,14 +101,14 @@ final class SafeDict<Key, Value>: @unchecked Sendable where Key: Hashable & Send
 ## Tuple
 
 {% hint style="info" %}
-**Information** 이 섹션은 현재 작성 중입니다.
+**Info** 이 섹션은 현재 작성 중입니다.
 {% endhint %}
 
 
 ## Generic
 
 {% hint style="info" %}
-**Information** 이 섹션은 현재 작성 중입니다.
+**Info** 이 섹션은 현재 작성 중입니다.
 {% endhint %}
 
 

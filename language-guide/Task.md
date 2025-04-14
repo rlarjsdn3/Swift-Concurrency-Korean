@@ -9,7 +9,7 @@ description: 비동기 작업을 수행하기 위한 기본 단위
 `Task`는 동기 코드에서 비동기(async) 함수를 호출할 수 있는 가교 역할을 합니다. 비동기 함수는 `Task`가 제공하는 비동기 컨텍스트(Async Context)에서만 호출될 수 있으며, 이 컨텍스트는 특점 지점에서 코드의 실행을 일시 중단(suspend)했다가, 적절한 시점에 다시 재개(resume)될 수 있도록 지원합니다.
 
 
-# 구조화되지 않은 동시성
+# Unstructured Concurrency
 
 `Task`와 `Detached Task(독립적인 작업)`은 구조화되지 않은 동시성(Unstructured Concurrency)에 해당합니다. 구조화되지 않은 동시성은 구조화된 동시성(Structured Concurrency)와 달리 더 높은 유연성을 제공하지만, 작업 간 취소 전파나 자원(Task-Local, 우선순위 등) 상속에는 많은 제한이 따릅니다. 특히 동기 코드에서 비동기 작업을 실행해야 하는 상황에서는 상위 작업이 존재하지 않을 수 있습니다. 또한 작업의 생명 주기가 특정 코드 블록의 범위를 벗어나야 하는 경우도 있습니다. 이처럼 구조화된 동시성을 사용할 수 없거나 사용하기 어려운 경우, `Task`가 가장 적합한 선택지가 됩니다.
 
@@ -111,14 +111,14 @@ extension MyDelegate: UICollectionViewDelegate {
 
 아래 표는 `Task`와 `Detached Task`를 비교한 것입니다.
 
-|   | `Task` | `Detached Task` |
+|   | **Task** | **Detached Task** |
 | - | - | - |
 | 취소 전파 | ❌ | ❌ |
 | 자원 상속(Task-Local, 우선순위 등) | ✅ | ❌ |
 | 비고 | 동기 코드에서 비동기 작업을 실행하는 비동기 컨텍스트 제공, 작업의 생명 주기가 특정 코드 블록의 범위를 벗어나야 할 때 사용됨. | 외부 작업의 컨텍스트 자원에 의존하지 않고 완전히 독립적으로 실행되어야 하는 작업에 적합함. |
 
 
-# 작업에서 결과값 반환
+# Returning Results from a Task
 
 `Task`는 작업을 완료하면 결과값을 반환할 수 잇으며, 이 결과값은 `value` 프로퍼티를 통해 접근할 수 있습니다. 결과값은 얻는 데 시간이 걸릴 수 있으므로, 해당 프로퍼티에 접근할 때는 `await` 키워드를 붙여야 합니다. 또한 `Task`가 예외를 던질 수 있으므로, 예외 처리를 위해 `try` 키워드도 함께 사용해야 합니다. `Task`는 오직 `Sendable`한 값만 반환할 수 있습니다. 그리고 `value` 프로퍼티를 호출하면 (내부) `Task`의 우선순위는 (외부) `Task`의 우선순위 수준으로 일시적으로 승격됩니다.
 
@@ -134,7 +134,7 @@ Task(priority: .high) {
 ```
 
 
-# 작업 우선순위
+# Task Priority
 
 `Task`도 `Grand Central Dispatch(GCD)`와 마찬가지로 우선순위(priority)를 가질 수 있습니다. 아래 표는 사용 가능한 우선순위 값을 보여줍니다.
 
@@ -182,24 +182,67 @@ Print "➡️ 내부 작업의 우선순위: TaskPriority.high"
 **Info** 액터는 재진입성(Re-Entrancy)이라는 특성을 통해 작업 간 우선순위를 보다 유연하게 조정할 수도 있습니다. ~~자세한 내용은 [Actor]() 문서를 참조하세요.~~
 {% endhint %}
 
-# 작업 취소
+# Task Cancellation
 
-하지만, 작업을 취소하더라도 해당 작업이 즉시 중단되는 것은 아닙니다. 단지 `Task.isCancelled` 값이 `true`로 설정될 뿐입니다.
+`Task`는 작업을 취소할 수 있는 간단한 메서드를 제공합니다. `Task` 인스턴스에서 `cancel()` 메서드를 호출하면, 해당 `Task` 내부의 모든 비동기 함수, `async-let` 그리고 `TaskGroup`에 작업 취소가 전파됩니다. 단, 내부에 정의한 또 다른 `Task`나 `Detached Task`에는 취소가 전파되지 않습니다.
 
-따라서 각 작업은 실행 중간중간 **취소 여부를 스스로 확인하고**, 적절한 방식으로 작업을 중단해야 합니다. 이러한 방식을 **협력적 취소(Cooperative Cancellation)** 라고 합니다.
+```swift
+let outerTask = Task {
+    try? await Task.sleep(for: .seconds(1))
+    
+    let innerTask = Task {
+        print("➡️ 내부 작업의 취소 여부: \(Task.isCancelled)")
+    }
+    
+     print("➡️ 외부 작업의 취소 여부: \(Task.isCancelled)")
+}
+outerTask.cancel()
 
-협력적 취소가 필요한 이유는 작업마다 취소에 대응하는 방식이 다를 수 있기 때문입니다. 대부분의 작업은 취소 전파를 받으면 예외를 던지며 종료되지만, 일부 작업은 지금까지의 중간 결과를 반환하거나, 별도의 정리 작업을 수행할 수도 있습니다.
+// Print "➡️ 외부 작업의 취소 여부: true"
+// Print "➡️ 내부 작업의 취소 여부: false"
+```
 
+`cacnel()` 메서드는 단순히 `Task`의 `isCancelled` 프로퍼티를 `false`에서 `true`로 변경할 뿐이며, 작업을 즉시 중단시키지 않습니다. 즉, `cancel()`은 취소를 알리는 신호만 보낼 뿐, 실제로 작업을 중단하는 로직은 구현되어 있지 않습니다. 따라서 각 작업은 실행 도중 스스로 취소 여부를 확인하고, 그에 맞게 적절한 방식으로 종료되어야 합니다. 이러한 방식을 협력적 취소(Cooperative Cancellation)라고 합니다.
 
-# 선호하는 작업 실행자
+협력적 취소가 필요한 이유는 작업마다 취소에 대응하는 방식이 다를 수 있기 때문입니다. 대부분의 작업은 취소가 전파되면 예외를 던지며 종료되지만, 일부 작업은 지금까지의 중간 결과를 반환하거나, 별도의 정리 작업을 수행해야 할 수도 있습니다.
 
-(내용)
+작업 중단 시 단순히 예외를 던지면 되는 경우, `Task.checkCancellation()` 메서드를 사용해 취소 여부를 확인할 수 있습니다. 반대로, 중단 시 별도의 처리가 필요한 경우에는 `Task.isCancelled` 프로퍼티를 활용해 필요한 처리를 직접 구현해야 합니다.
+
+```swift
+func doTask() async {
+    print("📡 작업 시작")
+    guard !Task.isCancelled else {
+        print("❌ 작업 취소")
+        return
+    }
+    print("📡 작업 종료")
+}
+let task = Task {
+    try? await Task.sleep(for: .seconds(1))
+    await doTask()
+}
+task.cancel()
+
+// Print "📡 작업 시작"
+// Print "❌ 작업 취소"
+```
 
 {% hint style="info" %}
-**Info** ~~작업 실행자(Task Executor)에 관한 자세한 내용은 [Task Executor]() 문서를 참조하세요.~~
+**Info** ~~작업 취소(Cancellation)에 관한 자세한 내용은 [Cancellation]() 문서를 참조하세요.~~
 {% endhint %}
 
-# Task와 [self] 캡처
+
+# Preferred Task Executor
+
+{% hint style="info" %}
+**Info** 이 섹션은 현재 작성 중입니다.
+{% endhint %}
+
+<!--{% hint style="info" %}-->
+<!--**Info** ~~작업 실행자(Task Executor)에 관한 자세한 내용은 [Task Executor]() 문서를 참조하세요.~~-->
+<!--{% endhint %}-->
+
+# Task and [weak self] Capture
 
 대부분의 경우, `Task`를 생성할 때 `[weak self]`와 같은 키워드를 사용해 현재 컨텍스트를 약하게 캡처할 필요가 없습니다. 이는 `Task`가 보유한 모든 참조가 작업이 완료된 직후 곧바로 해제되기 때문입니다.
 
