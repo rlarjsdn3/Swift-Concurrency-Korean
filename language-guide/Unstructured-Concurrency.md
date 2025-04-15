@@ -9,7 +9,7 @@ description: 비동기 작업을 수행하기 위한 기본 단위
 `Task`는 동기 코드에서 비동기 함수(Asynchronous Function)를 호출할 수 있는 가교 역할을 합니다. 비동기 함수는 `Task`가 제공하는 비동기 컨텍스트(Asynchronous Context)에서만 호출될 수 있으며, 이 컨텍스트는 특점 지점에서 코드의 실행을 일시 중단(suspend)했다가, 적절한 시점에 다시 재개(resume)될 수 있도록 지원합니다.
 
 
-# Unstructured Concurrency
+# Creating a Concurrency Context to Call Asynchronous Functions
 
 `Task`와 `Detached Task(독립적인 작업)`은 구조화되지 않은 동시성(Unstructured Concurrency)에 해당합니다. 구조화되지 않은 동시성은 구조화된 동시성(Structured Concurrency)와 달리 더 높은 유연성을 제공하지만, 작업 간 취소 전파나 자원(Task-Local, 우선순위 등) 상속에는 많은 제한이 따릅니다. 특히 동기 코드에서 비동기 작업을 실행해야 하는 상황에서는 상위 작업이 존재하지 않을 수 있습니다. 또한 작업의 생명 주기가 특정 코드 블록의 범위를 벗어나야 하는 경우도 있습니다. 이처럼 구조화된 동시성을 사용할 수 없거나 사용하기 어려운 경우, `Task`가 가장 적합한 선택지가 됩니다.
 
@@ -235,7 +235,7 @@ task.cancel()
 {% endhint %}
 
 
-# Preferred Task Executor
+# Task Executor Preferences
 
 {% hint style="info" %}
 **Info** 이 섹션은 현재 작성 중입니다.
