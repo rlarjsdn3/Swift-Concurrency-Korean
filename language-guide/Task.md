@@ -6,7 +6,7 @@ description: 비동기 작업을 수행하기 위한 기본 단위
 
 `Task`는 동작 방식 면에서 `DispatchQueue.global().async`와 유사합니다. 전달된 작업은 특정 액터(@MainActor)에 속하지 않는 한, 글로벌 스레드 풀(Global Thread Pool)에서 사용 가능한 스레드를 할당받아 실행됩니다. 이 작업은 결과가 반환되기를 기다리지 않고, 곧바로 다음 줄의 코드를 실행합니다. 즉, 작업은 비동기적으로 처리됩니다. 각 `Task`는 서로 병렬로 수행될 수 있으며, 내부의 코드는 정해진 순서대로 순차적으로 실행됩니다. 즉, 비동기적으로 실행된다고 해서 중간 코드가 건너뛰어지거나 무시되는 일은 없습니다.
 
-`Task`는 동기 코드에서 비동기(async) 함수를 호출할 수 있는 가교 역할을 합니다. 비동기 함수는 `Task`가 제공하는 비동기 컨텍스트(Async Context)에서만 호출될 수 있으며, 이 컨텍스트는 특점 지점에서 코드의 실행을 일시 중단(suspend)했다가, 적절한 시점에 다시 재개(resume)될 수 있도록 지원합니다.
+`Task`는 동기 코드에서 비동기 함수(Asynchronous Function)를 호출할 수 있는 가교 역할을 합니다. 비동기 함수는 `Task`가 제공하는 비동기 컨텍스트(Asynchronous Context)에서만 호출될 수 있으며, 이 컨텍스트는 특점 지점에서 코드의 실행을 일시 중단(suspend)했다가, 적절한 시점에 다시 재개(resume)될 수 있도록 지원합니다.
 
 
 # Unstructured Concurrency
@@ -37,8 +37,6 @@ Print "💰 작업 2 실행 시작"
 Print "💰 작업 2 실행 종료"
 Print "✅ 작업 1 실행 종료"
 ```
-
-`Task`는 작업 컨텍스트와의 상호작용을 위해 여러가지 정적(Static) 메서드를 지원합니다. 대표적으로 매개변수로 주어진 일정 시간 동안 작업을 멈추는 `Task.sleep(for:)` 메서드가 있습니다.
 
 `Task`는 외부 작업으로부터 일부 컨텍스트 자원(Task-Loca, 우선순위 등)을 상속받을 수 있습니다. 단, 작업 간 취소 전파는 불가능합니다.
 
@@ -186,6 +184,7 @@ Print "➡️ 내부 작업의 우선순위: TaskPriority.high"
 **Info** 액터는 재진입성(Re-Entrancy)이라는 특성을 통해 작업 간 우선순위를 보다 유연하게 조정할 수도 있습니다. ~~자세한 내용은 [Actor]() 문서를 참조하세요.~~
 {% endhint %}
 
+
 # Task Cancellation
 
 `Task`는 작업을 취소할 수 있는 간단한 메서드를 제공합니다. `Task` 인스턴스에서 `cancel()` 메서드를 호출하면, 해당 `Task` 내부의 모든 비동기 함수, `async-let` 그리고 `TaskGroup`에 작업 취소가 전파됩니다. 단, 내부에 정의한 또 다른 `Task`나 `Detached Task`에는 취소가 전파되지 않습니다.
@@ -245,6 +244,7 @@ task.cancel()
 <!--{% hint style="info" %}-->
 <!--**Info** ~~작업 실행자(Task Executor)에 관한 자세한 내용은 [Task Executor]() 문서를 참조하세요.~~-->
 <!--{% endhint %}-->
+
 
 # Task and [weak self] Capture
 

@@ -80,7 +80,7 @@ Task { let image = await downloadImage(from: url) }
 
 그렇다면 일시적으로 중단된 실행 흐름은 언제 다시 재개(resume)될까요? 비동기 함수가 결과값을 반환하는 시점에 코드 실행이 다시 재개됩니다. 시스템은 비동기 함수가 값을 반환하는 타이밍을 감지하고, 해당 시점이 실행을 이어가기 적절하다고 판단되면 중단된 지점부터 코드를 다시 실행합니다.
 
-완성된 downloadImage(from:) 함수 코드를 통해, 실행 흐름이 어떻게 일시 중단되고 다시 재개되는지 살펴보며, 그 속에 숨겨진 동작 원리를 하나씩 파헤쳐보겠습니다.
+완성된 `downloadImage(from:)` 함수 코드를 통해, 실행 흐름이 어떻게 일시 중단되고 다시 재개되는지 살펴보며, 그 속에 숨겨진 동작 원리를 하나씩 파헤쳐보겠습니다.
 
 ```swift
 func downloadImage(from url: String) async throws -> UIImage? {
@@ -110,6 +110,13 @@ func downloadImage(from url: String) async throws -> UIImage? {
 {% endstep %}
 {% endstepper %}
 
+{% hint style="warning" %}
+**Note**
+비동기 함수가 `await` 키워드를 만나 실행을 일시 중단하고 스레드의 제어권을 포기한 후, 일정 시간이 흐른 뒤 다시 재개될 때 Swift는 어느 스레드가 해당 함수를 재개할지 보장하지 않습니다. `await` 이전에 실행되던 스레드와 이후에 실행되는 스레드는 서로 다를 수 있으므로, 스레드-로컬(Thread-Local)과 같이 스레드에 의존적인 데이터는 사용하지 않아야 합니다.
+{% endhint %}
+
+
+
 위 실행 흐름을 다이어그램으로 그려보면 아래와 같습니다.
 
 ```
@@ -129,9 +136,37 @@ func downloadImage(from url: String) async throws -> UIImage? {
 Swift Concurrency에서는 작업마다 새로운 스레드를 생성하지 않고, 물리적인 CPU 코어 수에 맞춰 제한된 수의 스레드만을 생성해 비동기 작업을 처리합니다. 이로 인해 하나의 코어가 여러 스레드를 번갈아 실행할 때 발생하는 스레드 컨텍스트 스위칭이 최소화되어, 보다 안정적이고 높은 성능을 얻을 수 있습니다. 이는 작업들이 스레드를 서로 양보하며 협력적으로 사용한다는 의미에서 협력적 스레드 풀(Cooperative Thread Pool)이라고 불립니다.
 {% endhint %}
 
-{% hint style="info" %}
-**Note** 비동기 함수가 `await` 키워드를 만나 실행을 일시 중단하고 스레드의 제어권을 포기한 후, 일정 시간이 흐른 뒤 다시 재개될 때 Swift는 어느 스레드가 해당 함수를 재개할지 보장하지 않습니다. `await` 이전에 실행되던 스레드와 이후에 실행되는 스레드는 서로 다를 수 있으므로, 스레드-로컬(Thread-Local)과 같이 스레드에 의존적인 데이터는 사용하지 않아야 합니다.
+
+## Handy Static Methods for Async Function
+
+`Task`는 비동기 컨텍스트와 상호작용하기 위한 다양한 정적(Static) 메서드를 제공합니다. 그중 대표적인 예가 `Task.sleep(for:tolerance:clock:)` 메서드입니다. 이 메서드는 지정된 시간만큼 작업을 일시 중단(suspend)하여, 비동기 작업의 흐름을 제어할 수 있게 해줍니다. 이 메서드는 실제 네트워크 지연이나 I/O 대기와 같은 비동기 상황을 시뮬레이션할 때 매우 유용합니다. 예를 들어, 아래와 같이 임의의 지연을 두어 Swift Concurrency의 동작을 테스트해볼 수 있습니다.
+
+```swift
+func downloadImage(from url: String) async throws -> UIImage {
+    try await Task.sleep(for: .seconds(1))
+    return UIImage()
+}
+```
+
+또한 `Task.sleep(for:tolerance:clock:)`은 작업이 일시 중단된 상태에서 취소 신호가 전달되면 예외를 던질 수 있으므로, 호출 시 `try`와 함께 사용해야 합니다.
+
+{% hint style=“info” %}
+**Note**
+비슷한 이름의 함수로 `sleep(_:)`이 있지만, 이 둘은 동작 방식이 근본적으로 다릅니다. `Task.sleep(for:)`는 비동기 함수로, 작업을 일시 중단(suspend)하면서 스레드의 제어권을 시스템에 양보합니다. 이로 인해 다른 작업이 해당 스레드를 사용할 수 있게 되어 효율적인 동시 실행이 가능합니다. 반면, `sleep(_:)`은 동기 함수이며, 스레드를 점유한 채 그대로 대기합니다.
 {% endhint %}
+
+`Task.yield()`는 수행 중인 작업을 명시적으로 일시 중단하고, 다른 동시 작업에게 실행 기회를 양보할 수 있도록 도와주는 함수입니다.
+
+```swift
+func show(_ images: [ImageStatus]) async throws -> Data {
+    for image in images {
+        let compressedImage = compress(for: image)
+        await Task.yield()
+    }
+}
+```
+
+위 예제에서 `compress(for:)` 함수는 이미지를 압축하는 동기적인 작업이라고 가정해봅시다. 동기 코드는 내부에 일시 중단 지점(Suspension Point)이 존재하지 않기 때문에, 해당 루프가 실행되는 동안 다른 비동기 작업이 개입할 수 없습니다. 그러나 반복문 내부에서  `Task.yield()`를 호출하면, 작업 중간에 명시적으로 일시 중단 지점을 삽입하게 되어 다른 동시 작업에게 스레드를 양보할 수 있습니다. 이를 통해, 압축 작업이 길어질 경우에도 다른 동시 작업의 실행 가능성을 높일 수 있습니다.
 
 
 # Valid Contexts for Calling Async Functions
