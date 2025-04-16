@@ -13,7 +13,7 @@
 * [Structured Concurrency](language-guide/Structured-Concurrency.md)
 * [Unstructured Concurrency](language-guide/Unstructured-Concurrency.md)
 * [Continuation](language-guide/Continuation.md)
-<!--* [Cancellation](language-guide/Cancellation.md)-->
+* [Task Cancellation](language-guide/Task-Cancellation.md)
 * [Task-Local](language-guide/Task-Local.md)
 <!--* [AsyncSequence/AsyncStream](language-guide/AsyncSequence-AsyncStream.md)-->
 <!--* [Actor](language-guide/Actor.md)-->

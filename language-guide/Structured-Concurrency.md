@@ -162,8 +162,7 @@ func downloadImages(from urls: [String]) async throws -> [String: UIImage] {
 여기서 주목해야 할 또 하나의 포인트는 바로 `for-await-in` 구문입니다. 이 구문은 비동기 반복문으로, 작업 그룹에 추가된 하위 작업 중 완료된 순서대로 결과를 루프에 전달하여 실행됩니다. 이 비동기 반복문은 각 작업의 결과를 순차적으로 실행하기 때문에, 상위 작업이 데이터 경합(Data Race)의 위험없이 안전하게 각 키-값 쌍을 딕셔너리에 추가할 수 있습니다.
 
 {% hint style="info" %}
-**Info** 
-~~비동기 시퀀스(Asynchronous Sequence)와 비동기 스트림(Asynchronous Stream)에 관한 자세한 내용은 [AsyncSequence/AsyncStream]()를 참조하세요.~~
+**Info** ~~비동기 시퀀스(Asynchronous Sequence)와 비동기 스트림(Asynchronous Stream)에 관한 자세한 내용은 [AsyncSequence/AsyncStream]()를 참조하세요.~~
 {% endhint %}
 
 `async-let`과 작업 그룹은 하위 작업을 병렬로 실행한다는 공통점이 있지만, 중요한 차이점이 하나 있습니다. `async-let`은 하위 작업의 결과를 소비하지 않고 함수가 끝나면 해당 하위 작업들은 모두 암묵적으로 취소가 되지만, 작업 그룹에서는 하위 작업들이 단순히 대기될 뿐 취소되지 않습니다.  이는 작업 그룹이 포크-조인(fork-join) 패턴을 따르기 때문입니다. 포크된 작업은 조인 여부와 상관없이 독립적으로 실행되며, 상위 작업은 하위 작업이 모두 완료되어 종료될 때까지 대기합니다.
@@ -172,7 +171,7 @@ func downloadImages(from urls: [String]) async throws -> [String: UIImage] {
 작업 그룹(TaskGroup)과 동시적 바인딩(async let)은 작업을 병렬로 실행한다는 공통점이 있지만, 중요한 차이점이 있습니다. `async let`의 경우, 하위 작업의 결과를 소비하지 않은 채 함수가 종료되면, 해당 작업이 암묵적으로 취소됩니다. 반면, 작업 그룹에서 생성된 하위 작업은 취소되지 않고 실행 중인 상태로 남아 있으며, 명시적으로 취소 신호를 전파하지 않는 이상 계속 실행됩니다. 이러한 차이를 보이는 이유는 작업 그룹이 포크-조인(Fork-Join) 패턴을 따르기 때문입니다. 포크된 하위 작업들은 (조인 여부와 상관없이) 서로 독립적으로 실행되며, 상위 작업은 하위 작업이 모두 완료될 때까지 대기합니다.
 
 
-## Types of Task Groups
+# Types of Task Groups
 
 아래 표는 작업 그룹의 유형을 정리한 것입니다.
 
