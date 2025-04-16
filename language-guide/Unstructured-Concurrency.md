@@ -187,7 +187,7 @@ Print "➡️ 내부 작업의 우선순위: TaskPriority.high"
 
 # Task Cancellation
 
-`Task`는 작업을 취소할 수 있는 간단한 메서드를 제공합니다. `Task` 인스턴스에서 `cancel()` 메서드를 호출하면, 해당 `Task` 내부의 모든 비동기 함수, `async-let` 그리고 `TaskGroup`에 작업 취소가 전파됩니다. 단, 내부에 정의한 또 다른 `Task`나 `Detached Task`에는 취소가 전파되지 않습니다.
+`Task`는 작업을 취소할 수 있는 간단한 메서드를 제공합니다. 작업을 취소하려면 `Task` 인스턴스의 `cancel()` 함수를 호출합니다. 이 함수를 호출하면 `Task` 내의 호출된 비동기 함수(Asynchronous), `async-let` 바인딩 혹은 작업 그룹(TaskGroup)에 취소 신호가 전파됩니다. 단, 내부에 정의한 또 다른 `Task`나 `Detached Task`에는 자동으로 취소가 전파가 되지 않습니다.
 
 ```swift
 let outerTask = Task {
@@ -205,33 +205,8 @@ outerTask.cancel()
 // Print "➡️ 내부 작업의 취소 여부: false"
 ```
 
-`cacnel()` 메서드는 단순히 `Task`의 `isCancelled` 프로퍼티를 `false`에서 `true`로 변경할 뿐이며, 작업을 즉시 중단시키지 않습니다. 즉, `cancel()`은 취소를 알리는 신호만 보낼 뿐, 실제로 작업을 중단하는 로직은 구현되어 있지 않습니다. 따라서 각 작업은 실행 도중 스스로 취소 여부를 확인하고, 그에 맞게 적절한 방식으로 종료되어야 합니다. 이러한 방식을 협력적 취소(Cooperative Cancellation)라고 합니다.
-
-협력적 취소가 필요한 이유는 작업마다 취소에 대응하는 방식이 다를 수 있기 때문입니다. 대부분의 작업은 취소가 전파되면 예외를 던지며 종료되지만, 일부 작업은 지금까지의 중간 결과를 반환하거나, 별도의 정리 작업을 수행해야 할 수도 있습니다.
-
-작업 중단 시 단순히 예외를 던지면 되는 경우, `Task.checkCancellation()` 메서드를 사용해 취소 여부를 확인할 수 있습니다. 반대로, 중단 시 별도의 처리가 필요한 경우에는 `Task.isCancelled` 프로퍼티를 활용해 필요한 처리를 직접 구현해야 합니다.
-
-```swift
-func doTask() async {
-    print("📡 작업 시작")
-    guard !Task.isCancelled else {
-        print("❌ 작업 취소")
-        return
-    }
-    print("📡 작업 종료")
-}
-let task = Task {
-    try? await Task.sleep(for: .seconds(1))
-    await doTask()
-}
-task.cancel()
-
-// Print "📡 작업 시작"
-// Print "❌ 작업 취소"
-```
-
 {% hint style="info" %}
-**Info** ~~작업 취소(Cancellation)에 관한 자세한 내용은 [Cancellation]() 문서를 참조하세요.~~
+**Info** 작업 취소(Cancellation)에 관한 자세한 내용은 [Cancellation]() 문서를 참조하세요.
 {% endhint %}
 
 

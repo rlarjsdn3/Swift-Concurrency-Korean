@@ -50,6 +50,8 @@ Swift Concurrency는 보다 구조화되고 이해하기 쉬운 방식으로 작
 
 Swift Concurrency는 협력적 취소(Cooperative Cancellation) 모델을 따릅니다. 이는 각 작업이 실행 도중 스스로 취소 여부를 확인하고, 그에 맞는 처리를 수행해야 함을 의미합니다. 상위 작업이 하위 작업에 취소 신호를 전파하더라도, 하위 작업이 즉시 종료되는 것은 아닙니다. 단지 `Task.isCancelled` 프로퍼티의 값이 `true`로 설정될 뿐이며, 실제 종료 여부는 하위 작업의 구현 방식에 따라 달라집니다. 예를 들어, 어떤 작업은 취소 시 중간 결과를 반환할 수 있고, 또 어떤 작업은 `CancellationError`를 던지며 즉시 종료되기도 합니다. 이처럼 작업마다 취소에 대한 반응이 다를 수 있기 때문에, 작업을 설계할 때는 항상 취소 가능성을 고려하여 설계해야 합니다.
 
+작업을 취소하려면 `Task` 인스턴스의 `cancel()` 함수를 호출합니다. 이 함수를 호출하면 `Task` 내의 호출된 비동기 함수(Asynchronous), `async-let` 바인딩 혹은 작업 그룹에 취소 신호가 전파됩니다.
+
 작업의 취소 여부를 확인하는 방법은 아래와 같습니다.
 
 * `[Task.checkCancellation()]()`: 작업 취소 여부를 확인하고, 취소되었을 경우 `CancellationError`를 던지며 즉시 실행을 중단합니다.
@@ -218,7 +220,7 @@ Task {
 
 {% hint style="Info" %}
 **Note**
-`URLSession`의 `data(from:)` 비동기 메서드는 작업 실행 중 취소 신호를 수신하면, 네트워크 요청을 자동으로 중단하고 `URLError.cancelled` 예외를 발생시킵니다.
+`URLSession`의 `data(from:)` 비동기 메서드는 작업 실행 중 취소 신호를 받으면, 네트워크 요청을 자동으로 중단하고 `URLError.cancelled` 예외를 발생시킵니다.
 {% endhint %}
 
 
@@ -296,7 +298,7 @@ Task { try? await downloadImages() }
 
 # 구조화되지 않은 동시성에서의 취소 전파
 
-구조화되지 않은 동시성(Unstructured Concurrency)는 취소 전파가 중첩된 `Task` 속으로 자동으로 취소 전파가 되지 않습니다. 이 구조에서는 각 `Task`에 수동으로 취소를 전파해야 합니다.
+구조화되지 않은 동시성(Unstructured Concurrency)는 취소 전파가 중첩된 내부 `Task`나 `Detached Task`에는 자동으로 취소 전파가 되지 않습니다. 이 구조에서는 각 `Task`에 수동으로 취소를 전파해야 합니다.
 
 ```swift
 let outerTask = Task {
