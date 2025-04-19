@@ -76,7 +76,7 @@ func downloadImages(from urls: [String]) async -> [UIImage] {
 
 
 
-## async-let
+## Parallel Execution of a Fixed Number of Tasks with async-let
 
 동시에 수행해야 할 작업의 수가 정해져 있다면 `async-let` 바인딩을 사용하는 것이 적합합니다. 이는 간단하게 `let` 키워드 앞에 `async`를 붙이고, 초기화 시점의 `await` 키워드를 생략하는 방식으로 구현할 수 있습니다.  
 
@@ -106,7 +106,7 @@ func downloadImages(from urls: [String]) async throws -> [UIImage] {
 
 
 
-## Task Group
+## Parallel Execution of a Dynamic Number of Tasks with TaskGroup
 
 고정된 수의 작업을 병렬로 수행하는 `async-let` 바인딩과 달리, 작업 그룹(TaskGroup)은 작업의 수를 알 수 없는, 동적으로 작업의 수가 변할 수 있는 환경에서 선택할 수 있는 가장 적합한 선택지입니다. 작업그룹을 생성하려면 `withTaskGroup(of:returning:body:)` 함수를 사용해야 합니다. 함수를 호출하면 _body_ 클로저가 즉시 실행되며, 이 클로저는 `TaskGroup<ChildTaskResult>` 인스턴스를 매개변수로 전달받습니다. 해당 인스턴스의 `addTask(priority:operation:)` 메서드로 병렬로 수행하고자 하는 하위 작업을 생성하고 실행할 수 있습니다.
 

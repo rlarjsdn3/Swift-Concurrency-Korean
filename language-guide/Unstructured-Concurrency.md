@@ -14,7 +14,7 @@ description: 비동기 작업을 수행하기 위한 기본 단위
 `Task`와 `Detached Task(독립적인 작업)`은 구조화되지 않은 동시성(Unstructured Concurrency)에 해당합니다. 구조화되지 않은 동시성은 구조화된 동시성(Structured Concurrency)와 달리 더 높은 유연성을 제공하지만, 작업 간 취소 전파나 자원(Task-Local, 우선순위 등) 상속에는 많은 제한이 따릅니다. 특히 동기 코드에서 비동기 작업을 실행해야 하는 상황에서는 상위 작업이 존재하지 않을 수 있습니다. 또한 작업의 생명 주기가 특정 코드 블록의 범위를 벗어나야 하는 경우도 있습니다. 이처럼 구조화된 동시성을 사용할 수 없거나 사용하기 어려운 경우, `Task`가 가장 적합한 선택지가 됩니다.
 
 
-## Task
+## Tasks That Inherit Execution Context
 
 `Task`를 생성할 때는 수행할 작업을 클로저로 전달해야 합니다. `Task`는 생성되자마자 즉시 실행되며, `URLSession`의 `resume()` 메서드처럼 명시적으로 시작하거나 스케줄링할 필요가 없습니다. 작업을 생성한 후에는 해당 인스턴스를 통해 작업과 상호작용할 수 있습니다. 예를 들어, 작업의 결과를 기다리거나 작업을 취소할 수 있습니다. 작업에 대한 참조를 유지하지 않더라도 작업은 즉시 실행되지만, 참조를 유지하지 않으면 결과를 기다리거나 작업을 취소하는 등의 제어는 할 수 없습니다.
 
@@ -58,7 +58,7 @@ Task(priority: .background) {
 {% endhint %}
 
 
-## Detached Task
+## Fully Independent Detached Tasks
 
 `Detached Task` 역시 `Task`와 많은 특성을 공유합니다. 그러나 `Detached Task`는 외부 작업으로부터 어떤 컨텍스트 자원을 상속받지 않으며, 완전히 분리되어 독립적으로 실행됩니다. 
 
@@ -136,7 +136,7 @@ Task(priority: .high) {
 {% endhint %}
 
 
-# Task Priority
+# Task Priority and Priority Escalation to Prevent Inversion
 
 `Task`도 `Grand Central Dispatch(GCD)`와 마찬가지로 우선순위(priority)를 가질 수 있습니다. 아래 표는 사용 가능한 우선순위 값을 보여줍니다.
 
@@ -185,9 +185,9 @@ Print "➡️ 내부 작업의 우선순위: TaskPriority.high"
 {% endhint %}
 
 
-# Task Cancellation
+# Task Cancellation and Its Characteristics
 
-`Task`는 작업을 취소할 수 있는 간단한 메서드를 제공합니다. 작업을 취소하려면 `Task` 인스턴스의 `cancel()` 함수를 호출합니다. 이 함수를 호출하면 `Task` 내의 호출된 비동기 함수(Asynchronous), `async-let` 바인딩 혹은 작업 그룹(TaskGroup)에 취소 신호가 전파됩니다. 단, 내부에 정의한 또 다른 `Task`나 `Detached Task`에는 자동으로 취소가 전파가 되지 않습니다.
+`Task`는 작업을 취소할 수 있는 간단한 메서드를 제공합니다. 단, `Task` 내부에 정의한 또 다른 `Task`나 `Detached Task`에는 자동으로 취소가 전파가 되지 않습니다.
 
 ```swift
 let outerTask = Task {
@@ -206,11 +206,11 @@ outerTask.cancel()
 ```
 
 {% hint style="info" %}
-**Info** 작업 취소(Cancellation)에 관한 자세한 내용은 [Cancellation]() 문서를 참조하세요.
+**Info** 작업 취소(Cancellation)에 관한 자세한 내용은 [Task Cancellation]() 문서를 참조하세요.
 {% endhint %}
 
 
-# Task Executor Preferences
+# Controlling Task Execution Context with Executor Preferences
 
 {% hint style="info" %}
 **Info** 이 섹션은 현재 작성 중입니다.

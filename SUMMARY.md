@@ -8,7 +8,6 @@
 
 ## Language Guide
 
-<!--* [Task](language-guide/Task.md)-->
 * [async-await](language-guide/async-await.md)
 * [Structured Concurrency](language-guide/Structured-Concurrency.md)
 * [Unstructured Concurrency](language-guide/Unstructured-Concurrency.md)
@@ -16,7 +15,7 @@
 * [Task Cancellation](language-guide/Task-Cancellation.md)
 * [Task-Local](language-guide/Task-Local.md)
 <!--* [AsyncSequence/AsyncStream](language-guide/AsyncSequence-AsyncStream.md)-->
-<!--* [Actor](language-guide/Actor.md)-->
+* [Actor](language-guide/Actor.md)
 * [Sendable](language-guide/Sendable.md)
 <!--* [GlobalActor](language-guide/MainActor-GlobalActor.md)-->
 <!--* [Task Executor](language-guide/Task-Executor.md)-->
@@ -25,6 +24,24 @@
 <!--* [Attributes](language-guide/Atributes.md)-->
 
 
+
+
+<!--## Official Documentation-->
+<!---->
+<!--* [Task]()-->
+<!--    * [init(priority:operation:)]()-->
+
+
+
+
+<!--## Swift Evolution-->
+<!---->
+<!--* [SE-0306-actors]()-->
+
+
+
+
 ## Appendix
 
+* [Async Glossary](appendix/Async-Glossary.md)
 * [Citations](appendix/Citations.md)

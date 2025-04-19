@@ -9,11 +9,11 @@ Swift Concurrency는 기존 동시성 프로그래밍 모델의 한계를 극복
 만약 구조체나 열거형과 같은 값 타입, 혹은 자체적인 동기화 메커니즘이 구현된 일부 클래스처럼 스레드 간 안전하게 공유할 수 있는 타입에 특별한 표식을 부여하고, 서로 다른 스레드 간에는 이러한 표식을 가진 타입만 공유할 수 있도록 강제한다면 어떨까요? 그렇게 하면 컴파일 타임에 이 표식이 없는 타입의 공유 시도를 차단할 수 있고, 개발자는 복잡한 디버깅 과정 없이도 데이터 경합의 가능성이 높은 코드를 빠르게 식별하고 수정할 수 있을 것입니다. 바로 이 아이디어에서 출발해 등장한 것이 `Sendable` 프로토콜입니다.
 
 
-# Sendable
+# Sendable Types for Safe Sharing Across Concurrency Domains
 
 `Sendable`은 서로 다른 동시 컨텍스트(Concurrent Context) 간에 데이터 경합의 위험 없이 안전하게 값을 공유할 수 있는지를 검증하는 마커 프로토콜(Marker Protocol)입니다. Swift 컴파일러는 `Sendable`을 따르지 않는 값이 서로 다른 동시 컨텍스트 간에 주고받으려는 시도를 감지하면, 컴파일 타임에 오류를 발생시켜 개발자에게 이를 즉시 알려줍니다. 이 프로토콜은 구현해야 할 메서드나 프로퍼티가 없으며, 해당 타입이 동시성 환경에서도 안전하게 사용될 수 있음을 나타내는 역할을 합니다.
 
-## @unchecked Sendable
+## Unchecked Sendable for Disabling Concurrency Safety Checks
 
 어떤 타입이 동시성 환경에서 안전하게 동작한다고 개발자가 판단하는 경우, `@unchecked Sendable`을 사용해 컴파일러의 동시성 검사를 비활성화할 수 있습니다. 이 속성은 컴파일러가 타입의 스레드 안전성을 검증하지 않기 때문에, 반드시 개발자의 책임 하에 제한적으로 사용해야 합니다. 부주의하게 사용할 경우, 데이터 경합 등 동시성 문제를 초래할 수 있으므로 주의가 필요합니다.
 
@@ -34,7 +34,7 @@ final class Counter: @unchecked Sendable {
 
 
 
-# 타입별 Sendable 준수 방식
+# Sendable Compliance Rules for Structs, Classes and Enums
 
 모든 타입이 `Sendable` 프로토콜을 준수할 수 있는 건 아닙니다. 값이 복사되는 구조체나 열거형과 같은 값 타입은 사소한 요건만 충족한다면 `Sendable`이 될 수 있지만, 참조의 복사가 일어나는 클래스와 같은 참조 타입이 `Sendable`이 되기 위해선 다소 까다로운 요건을 충족해야 합니다. 액터(Actor)부터 구조체, 클래스에 이르기까지 타입별로 `Sendable` 프로토콜의 준수 방식을 살펴보겠습니다. 
 
@@ -113,7 +113,7 @@ final class SafeDict<Key, Value>: @unchecked Sendable where Key: Hashable & Send
 
 
 
-# @Sendable 클로저 속성
+# Capturing Rules for @Sendable Closures
 
 함수(또는 클로저)도 `Sendable`이 될 수 있습니다. 다만, 함수 타입은 일반적인 타입처럼 프로토콜을 채택할 수 없기 때문에, 이를 표현하기 위해 `@Sendable`이라는 특별한 속성이 도입되었습니다. `@Sendable`은 함수의 타입 어노테이션이나 클로저 매개변수 앞에 붙여, 해당 함수가 동시성 환경에서도 안전하게 실행될 수 있음을 나타냅니다.
 
@@ -184,10 +184,3 @@ func incrementParellel() async {
 {% hint style="info" %}
 **Note** Swift 6.0부터는 `@Sendable` 키워드가 `sending`으로 변경되었습니다. ~~`sending`에 관한 자세한 내용은 [지역 기반 격리]()를 참조하세요.~~
 {% endhint %}
-
-
-
-
-[^1]: Marker Protocol
-[^2]: @frozen
-[^3]: @usableFromInline

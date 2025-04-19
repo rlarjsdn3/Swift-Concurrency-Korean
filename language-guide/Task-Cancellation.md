@@ -69,19 +69,19 @@ func downloadImage() async throws -> UIImage {
 
 
 
-# 구조화된 동시성에서의 작업 취소
+# Task Cancellation in Structured Concurrency
 
 구조화된 동시성에서는 모든 작업이 작업 트리(Task Tree) 구조로 구성됩니다. 이 구조에서는 상위 작업에서 취소 신호가 발생하면, 해당 신호가 모든 하위 작업에 자동으로 전파됩니다. 하위 작업들은 자신의 작업 컨텍스트를 스스로 정리한 뒤, 상위 작업에게 종료를 알립니다. 모든 하위 작업이 종료되면, 상위 작업도 뒤이어 함께 종료됩니다.
 
 구조화된 동시성에서의 취소 전파는 다음 두 가지 방식으로 나눌 수 있습니다.
 
-* 암시적(Implicit) 취소 전파: 시스템이 자동으로 취소 신호를 전파하는 방식입니다. 예를 들어, 하위 작업 중 하나에서 예외가 발생하면, 그 시점부터 모든 다른 하위 작업에 취소 신호가 자동으로 전파됩니다.
+* **암시적(Implicit) 취소 전파:** 시스템이 자동으로 취소 신호를 전파하는 방식입니다. 예를 들어, 하위 작업 중 하나에서 예외가 발생하면, 그 시점부터 모든 다른 하위 작업에 취소 신호가 자동으로 전파됩니다.
 
-* 명시적(explicit) 취소 전파: 직접 `Task.cancel()`이나 `cancelAll()` 메서드를 호출해 취소 신호를 전파하는 방식입니다. 
+* **명시적(explicit) 취소 전파:** 직접 `Task.cancel()`이나 `cancelAll()` 메서드를 호출해 취소 신호를 전파하는 방식입니다. 
 
 
 
-## 암시적 취소 전파
+## Implicit Cancellation Propagation
 
 암시적 취소 전파는 병렬로 수행 중인 하위 작업 중 하나가 예외를 던졌을 때 발생합니다. 하위 작업이 예외를 발생시키면, 이를 수신한 상위 작업은 즉시 나머지 실행 중인 모든 하위 작업에게 취소 신호를 전파합니다. 
 
@@ -225,7 +225,7 @@ Task {
 
 
 
-## 명시적 취소 전파
+## Explicit Cancellation Propagation
 
 명시적 취소 전파는 `Task`에서 명시적으로 `cancel()` 함수나, 작업 그룹에서 명시적으로 `cancelAll()` 함수를 호출할 때 발생합니다. 이 함수가 호출되면 지체없이 모든 하위작업들에 취소 신호를 전파합니다.
 
@@ -296,7 +296,7 @@ Task { try? await downloadImages() }
 
 
 
-# 구조화되지 않은 동시성에서의 취소 전파
+# Cancellation Propagation in Unstructured Concurrency
 
 구조화되지 않은 동시성(Unstructured Concurrency)는 취소 전파가 중첩된 내부 `Task`나 `Detached Task`에는 자동으로 취소 전파가 되지 않습니다. 이 구조에서는 각 `Task`에 수동으로 취소를 전파해야 합니다.
 
