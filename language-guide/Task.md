@@ -185,42 +185,6 @@ Print "➡️ 내부 작업의 우선순위: TaskPriority.high"
 {% endhint %}
 
 
-# Task Cancellation and Its Characteristics
-
-`Task`는 작업을 취소할 수 있는 간단한 메서드를 제공합니다. 단, `Task` 내부에 정의한 또 다른 `Task`나 `Detached Task`에는 자동으로 취소가 전파가 되지 않습니다.
-
-```swift
-let outerTask = Task {
-    try? await Task.sleep(for: .seconds(1))
-    
-    let innerTask = Task {
-        print("➡️ 내부 작업의 취소 여부: \(Task.isCancelled)")
-    }
-    
-     print("➡️ 외부 작업의 취소 여부: \(Task.isCancelled)")
-}
-outerTask.cancel()
-
-// Print "➡️ 외부 작업의 취소 여부: true"
-// Print "➡️ 내부 작업의 취소 여부: false"
-```
-
-{% hint style="info" %}
-**Info** 작업 취소(Cancellation)에 관한 자세한 내용은 [Task Cancellation]() 문서를 참조하세요.
-{% endhint %}
-
-
-# Controlling Task Execution Context with Executor Preferences
-
-{% hint style="info" %}
-**Info** 이 섹션은 현재 작성 중입니다.
-{% endhint %}
-
-<!--{% hint style="info" %}-->
-<!--**Info** ~~작업 실행자(Task Executor)에 관한 자세한 내용은 [Task Executor]() 문서를 참조하세요.~~-->
-<!--{% endhint %}-->
-
-
 # Task and [weak self] Capture
 
 대부분의 경우, `Task`를 생성할 때 `[weak self]`와 같은 키워드를 사용해 현재 컨텍스트를 약하게 캡처할 필요가 없습니다. 이는 `Task`가 보유한 모든 참조가 작업이 완료된 직후 곧바로 해제되기 때문입니다.
@@ -254,4 +218,25 @@ actor Worker {
 }
 Task { await Worker().start() }
 ```
+
+
+# Isolating a Task to a Specific Actor
+
+{% hint style="info" %}
+**Info** 이 섹션은 현재 작성 중입니다.
+{% endhint %}
+
+
+# Controlling Task Execution Context with Executor Preferences
+
+{% hint style="info" %}
+**Info** 이 섹션은 현재 작성 중입니다.
+{% endhint %}
+
+
+## Implementing a Custom Task Executor
+
+{% hint style="info" %}
+**Info** 이 섹션은 현재 작성 중입니다.
+{% endhint %}
 

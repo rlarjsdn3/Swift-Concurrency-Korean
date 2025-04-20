@@ -18,6 +18,7 @@
 * [AsyncSequence/AsyncStream](language-guide/AsyncSequence-AsyncStream.md) <br> (내용)
 * [Actor](language-guide/Actor.md) <br> (내용)
 * [Sendable](language-guide/Sendable.md) <br> (내용)
+
 <!--* [GlobalActor](language-guide/MainActor-GlobalActor.md) <br> (내용)-->
 <!--* [Task Executor](language-guide/Task-Executor.md) <br> (내용)-->
 <!--* [Actor Executor](language-guide/Actor-Executor.md) <br> (내용)-->
@@ -27,9 +28,13 @@
 
 ## 📚 References
 
-* [Citations](appendix/Citations.md) <br> (내용)
+* [Async-Glossary](appendix/Async-Glossary.md)
+* [Citations](appendix/Citations.md)
 
 
-## 📱 Contacts
+## ✨ Authors
 
-* [Contacts](Contacts/Contacts.md) <br> (내용)
+| 저자 |
+| :--: | 
+|  |
+| [김소월](https://github.com/rlarjsdn3) | 

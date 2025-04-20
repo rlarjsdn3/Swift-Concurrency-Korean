@@ -6,7 +6,7 @@ description: 콜백 기반 비동기 API를 Async-Await 기반 비동기 함수�
 
 이 API를 사용하면 비동기 코드의 실행을 일시 중단(suspend)하고, 개발자가 원하는 시점에 코드 흐름을 재개(resume)할 수 있습니다. `CheckedContinuation`은 시스템이 관리하는 특정 시점의 실행 상태를 캡처해 저장하는 객체인 `Continuation`에 좀 더 직접적으로 접근하고 제어할 수 있도록 도와줍니다.
 
-# Continuation API
+# Bridging Callbacks and Async/Await with Continuation API
 
 `Check(Unsafe)Continuation` API는 크게 `withCheckContinuation(_:)`, `withCheckedThrowingContinuation(_:)`, `withUnsafeContinuation(_:)` 그리고 `withUnsafeThrowingContinuation(_:)`으로 4가지 유형이 있습니다.
 
