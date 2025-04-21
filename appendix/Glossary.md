@@ -11,4 +11,7 @@ description: Swift Concurrency 용어집
  | 여러 스레드가 동시에 하나의 메모리 위치를 읽고 쓰면서 발생하는 충돌 |
 | 경쟁 조건(high-level race condition) | 작업의 의미적 순서 또는 비즈니스 로직상 불변 조건이 깨질 가능성이 있는 경우 |
 | 원자성(Atomicity) | |
-
+| 작업(Task) | |
+| 동시 컨텍스트(Concurrent Context) | |
+| 실행 컨텍스트(Execution Context) | |
+| 작업 컨텍스트(Task Context) | |

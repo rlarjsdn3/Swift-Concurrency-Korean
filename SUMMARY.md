@@ -20,8 +20,6 @@
 * [Actor](language-guide/Actor.md)
 
 <!--* [GlobalActor](language-guide/MainActor-GlobalActor.md)-->
-<!--* [Task Executor](language-guide/Task-Executor.md)-->
-<!--* [Actor Executor](language-guide/Actor-Executor.md)-->
 <!--* [Region Based Isolation](language-guide/Region-Based-Isolation.md)-->
 <!--* [Attributes](language-guide/Atributes.md)-->
 
@@ -39,5 +37,5 @@
 
 ## Appendix
 
-* [Async Glossary](appendix/Async-Glossary.md)
+* [Glossary](appendix/Async-Glossary.md)
 * [Citations](appendix/Citations.md)

@@ -229,6 +229,8 @@ Task { await Worker().start() }
 
 # Controlling Task Execution Context with Executor Preferences
 
+<!--실행자(executor)는 비동기 작업이 어떤 스레드(또는 큐)에서 실행될지, 어떤 우선순위를 가질지, 그리고 어떤 순서로 처리될지를 조율하는 실행 컨텍스트입니다. 실행자는 작업을 특정 스레드에 직접 할당하진 않지만, 어떤 실행 환경에서 작업이 실행되어야 하는지를 정의합니다. 또한, 주어진 우선순위에 따라 더 중요한 작업을 우선적으로 실행할 수 있도록 하며, 직렬 실행자의 경우에는 작업 간의 실행 순서를 제어하여, 데이터 충돌 없이 안전하게 실행되도록 합니다. Swift는 기본적으로 전역 동시 실행자(global concurrent executor)와 직렬 실행자(serial executor)를 제공합니다.-->
+
 {% hint style="info" %}
 **Info** 이 섹션은 현재 작성 중입니다.
 {% endhint %}
