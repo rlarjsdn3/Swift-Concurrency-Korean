@@ -9,7 +9,7 @@
 
 ## Language Guide
 
-* [Task](language-guide/Task.md)
+* [작업(Task)](language-guide/Task.md)
 * [async-await](language-guide/async-await.md)
 * [Structured Concurrency](language-guide/Structured-Concurrency.md)
 * [Continuation](language-guide/Continuation.md)
@@ -37,5 +37,5 @@
 
 ## Appendix
 
-* [Glossary](appendix/Async-Glossary.md)
+* [Glossary](appendix/Glossary.md)
 * [Citations](appendix/Citations.md)
