@@ -132,7 +132,7 @@ print("🎉 김소월의 생일은 \(await task.value)입니다.")
 ```
 
 {% hint style="info" %}
-**Info** `Sendable` 프로토콜은 데이터 경합의 위험없이 서로 다른 동시 컨텍스트(스레드)에서 안전하게 공유할 수 있는 타입입니다. ~~자세한 내용은 [Sendable](programming-guide/Sendable.md) 문서를 참조하세요.~~
+**Info** `Sendable` 프로토콜은 데이터 경합의 위험 없이 서로 다른 동시 컨텍스트(스레드)에서 안전하게 공유할 수 있는 타입입니다. ~~자세한 내용은 [Sendable](programming-guide/Sendable.md) 문서를 참조하세요.~~
 {% endhint %}
 
 
@@ -276,6 +276,7 @@ Prints "deinit actor"
 | 작업 컨텍스트(Task Context) | `Task`가 실행되는 동안 유지되는 작업의 내부 상태와 메타데이터를 포함한 실행 환경 | 작업의 우선순위, 취소 상태, Task-Local 값을 추적하고 전달 | `Task.currentPriority`, `Task.isCancelled`, `Task-Local` | 
 | 실행 컨텍스트(Execution Context) | 코드가 실제로 실행되는 스레드 또는 실행자(executor) 환경 | 작업이 어떤 실행 환경에서 실행될지를 결정하고, 실행 순서와 우선순위를 조율 | `@MainActor`, `GlobalConcurrentExecutor`, `SerialExecutor` |
 | 비동기 컨텍스트(Asynchronous Context) | `await` 키워드를 사용할 수 있는 코드 블록 또는 비동기 함수 내부 | 비동기 함수를 호출할 수 있도록 하는 문법적 환경을 제공 | 비동기 함수 내부, `Task`, `addTask { .. }` 등 |
+| 동시 컨텍스트(Concurrency Context) | 여러 작업이 동시에 실행될 수 있도록 설정된 실행 환경 | 데이터에 동시에 접근할 수 있는 상황을 관리하고, 동시적 안전성을 확보 | 액터(Actor), 작업그룹(TaskGroup) 등 |
 
 * **컨텍스트(Context):** 코드가 실행되는 동안 런타임이 제공하는 실행 환경 및 관련 정보들의 집합
 {% endhint %}
