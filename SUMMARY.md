@@ -16,7 +16,7 @@
 * [Task Cancellation](language-guide/Task-Cancellation.md)
 * [Task-Local](language-guide/Task-Local.md)
 * [AsyncSequence/AsyncStream](language-guide/AsyncSequence-AsyncStream.md)
-* [Sendable](language-guide/Sendable.md)
+* [센더블(Sendable)](language-guide/Sendable.md)
 * [Actor](language-guide/Actor.md)
 
 <!--* [GlobalActor](language-guide/MainActor-GlobalActor.md)-->
