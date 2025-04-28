@@ -14,7 +14,7 @@
 * [Structured Concurrency](language-guide/Structured-Concurrency.md)
 * [Continuation](language-guide/Continuation.md)
 * [Task Cancellation](language-guide/Task-Cancellation.md)
-* [Task-Local](language-guide/Task-Local.md)
+* [태스크-로컬(Task-Local)](language-guide/Task-Local.md)
 * [AsyncSequence/AsyncStream](language-guide/AsyncSequence-AsyncStream.md)
 * [센더블(Sendable)](language-guide/Sendable.md)
 * [Actor](language-guide/Actor.md)

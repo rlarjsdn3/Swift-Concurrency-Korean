@@ -169,7 +169,7 @@ func getSendableClosure() -> (@Sendable () async -> Void) {
 
 지금까지 살펴본 대부분의 동시성 예제는 사실상 `@Sendable` 속성에 의존하고 있었습니다. 작업(Task)이나 하위 작업(Child Task)을 생성할 때, Swift는 항상 `@Sendable`한 클로저를 요구합니다.
 
-예를 들어, 아래 예제는 작업을 생성하는 대표적인 API들입니다.
+아래 예제는 작업을 생성하는 대표적인 API들입니다.
 
 ```swift
 Task.init(
