@@ -4,7 +4,7 @@
 
 ## Overview
 
-* [개요](welcome-to-swift/Overview.md)
+* [개요](overview/Overview.md)
 
 
 ## Language Guide
@@ -22,12 +22,6 @@
 <!--* [GlobalActor](language-guide/MainActor-GlobalActor.md)-->
 <!--* [Region Based Isolation](language-guide/Region-Based-Isolation.md)-->
 <!--* [Attributes](language-guide/Atributes.md)-->
-
-
-<!--## Official Documentation-->
-<!---->
-<!--* [Task]()-->
-<!--    * [init(priority:operation:)]()-->
 
 
 ## Swift Evolution
