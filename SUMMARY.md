@@ -4,20 +4,20 @@
 
 ## Overview
 
-* [Overview](welcome-to-swift/Overview.md)
+* [개요](welcome-to-swift/Overview.md)
 
 
 ## Language Guide
 
 * [작업(Task)](language-guide/Task.md)
-* [async-await](language-guide/async-await.md)
-* [Structured Concurrency](language-guide/Structured-Concurrency.md)
-* [Continuation](language-guide/Continuation.md)
-* [Task Cancellation](language-guide/Task-Cancellation.md)
+* [에이싱크-어웨이트(async-await)](language-guide/async-await.md)
+* [구조화된 동시성(Structured Concurrency)](language-guide/Structured-Concurrency.md)
+* [컨티뉴에이션(Continuation)](language-guide/Continuation.md)
+* [작업 취소(Task Cancellation)](language-guide/Task-Cancellation.md)
 * [태스크-로컬(Task-Local)](language-guide/Task-Local.md)
-* [AsyncSequence/AsyncStream](language-guide/AsyncSequence-AsyncStream.md)
+* [에이싱크-스트림(AsyncStream)](language-guide/AsyncSequence-AsyncStream.md)
 * [센더블(Sendable)](language-guide/Sendable.md)
-* [Actor](language-guide/Actor.md)
+* [액터(Actor)](language-guide/Actor.md)
 
 <!--* [GlobalActor](language-guide/MainActor-GlobalActor.md)-->
 <!--* [Region Based Isolation](language-guide/Region-Based-Isolation.md)-->
@@ -30,12 +30,11 @@
 <!--    * [init(priority:operation:)]()-->
 
 
-<!--## Swift Evolution-->
-<!---->
-<!--* [SE-0306-actors]()-->
+## Swift Evolution
+
+* [0296-async-await](swift-evolutions/0296-async-await.md)
 
 
 ## Appendix
 
-* [Glossary](appendix/Glossary.md)
-* [Citations](appendix/Citations.md)
+* [참고 자료](appendix/Citations.md)

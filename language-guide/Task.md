@@ -4,79 +4,82 @@ description: 비동기 작업을 수행하기 위한 기본 단위
 
 `Task`는 비동기 작업을 실행하기 위한 기본 단위입니다. 
 
-`Task`는 동작 방식 측면에서 글로벌 디스패치 큐(Global Dispatch Queue)와 유사하게 동작합니다. 특정 액터(Actor)에 속하지 않는 `Task`는 글로벌 스레드 풀(Global Thread Pool)에서 가용한 스레드를 할당받아 실행됩니다. `Task`는 결과를 기다리지 않고, 곧바로 다음 줄의 코드를 실행할 수 있으며, 각 `Task`는 병렬로 실행될 수 있습니다. `Task` 내부의 코드는 작성된 순서대로 실행되므로, 비동기로 실행된다고 해서 코드 실행이 건너뛰어지거나 무시되지는 않습니다.
+`Task`는 동작 방식 측면에서 글로벌 디스패치 큐(Global Dispatch Queue)와 유사하게 동작합니다. 격리되지 않은 `Task`는 특정 액터(Actor)에 속하지 않으며, 글로벌 스레드 풀(Global Thread Pool)에서 가용한 스레드를 할당받아 실행됩니다. `Task`는 비동기적으로 실행되며, 생성 직후 결과를 기다리지 않고 곧바로 다음 줄의 코드를 실행할 수 있습니다. 이러한 특성 덕분에 각 `Task`는 병렬로 실행될 수 있습니다. `Task` 내부의 코드는 작성된 순서대로 실행되며, 비동기로 실행된다고 해서 코드의 일부가 건너뛰어지거나 무시되는 일은 없습니다.
 
-각 `Task`는 고유한 상태와 실행 자원을 관리하며, 자체적인 작업 컨텍스트(Task Context) 내에서 실행됩니다. 작업 컨텍스트는 `Task`가 실행되는 동안 내부적으로 유지되는 실행 환경입니다. 이 환경에는 우선순위(Priority), 취소 상태(Cancellation Status)나 태스크-로컬(Task-Local) 등 요소를 포함하고 있습니다. 이 컨텍스트는 다른 `Task`와 상태를 공유하지 않기 때문에, 각 작업은 독립적으로 동작합니다. 
+각 `Task`는 고유한 상태를 가지며, 자체적인 작업 컨텍스트(Task Context) 내에서 실행됩니다. 작업 컨텍스트란 `Task`가 실행되는 동안 내부적으로 유지되는 독립적인 실행 환경을 의미합니다. 이 컨텍스트에는 액터(Actor), 작업 우선순위(Priority), 취소 상태(Cancellation)나 태스크-로컬(Task-Local) 등 컨텍스트를 포함하고 있습니다. 이 컨텍스트는 다른 `Task`와 상태를 공유하지 않으므로, 각 `Task`는 서로에게 영향을 주지 않고 독립적으로 동작할 수 있습니다. 
 
-`Task`는 동기 코드 내에서 비동기 코드를 사용할 수 있도록 해주는 가교 역할을 합니다. `Task`를 생성하면 새로운 비동기 컨텍스트(Asynchronous Context)가 열리며, 이 컨텍스트 내부에서만 비동기 함수(Asynchronous Function)를 호출할 수 있습니다. 이 컨텍스트는 실행 흐름을 특정 지점에서 일시 중단(suspend)하고, 적절한 시점에 다시 재개(resume)될 수 있도록 지원합니다.
+`Task`는 동기 코드에서 비동기 함수를 사용할 수 있도록 해주는 가교 역할을 합니다. 즉, 기존의 동기 흐름 안에서 새로운 비동기 작업을 시작할 수 있도록 도와줍니다. `Task`를 생성하면 새로운 비동기 컨텍스트(Asynchronous Context)가 열리며, 이 컨텍스트 내부에서만 비동기 함수(Asynchronous Function)를 호출할 수 있습니다. 이 컨텍스트는 실행 흐름을 특정 시점에서 일시 중단(suspend)할 수 있으며, 적절한 시점에 다시 재개(resume)될 수 있도록 지원합니다.
 
 
 # Creating a Concurrency Context to Call Asynchronous Functions
 
-작업 컨텍스트를 생성하는 주요 방법으로 두 가지가 있습니다. 바로 `Task`와 `Detached Task`입니다. 이 둘은 구조화되지 않은 동시성(Unstructured Concurrency)에 해당하며, 구조화된 동시성보다 더 높은 유연성을 제공합니다. 하지만, `Task`와 `Detached Task`는 상위 작업(Parent Task)과의 연결이 없기 때문에, 구조화된 동시성과 달리 작업 간 취소 전파(Cancellation Propagation)가 우리어지지 않습니다. 또한, `Detached Task`는 상위 컨텍스트(예: Task-Local, 우선순위 등)를 상속하지 않기 때문에, 컨텍스트의 일관성을 유지하기 어려울 수 있습니다. 
+작업 컨텍스트를 생성하는 주요 방법으로 두 가지가 있습니다. 바로 `Task`와 `Detached Task`입니다. 이 두 방식은 구조화되지 않은 동시성(Unstructured Concurrency)에 해당하며, 구조화된 동시성보다 더 높은 유연성을 제공합니다. 
 
-`Task`와 `Detached Task`는 동기 코드에서 비동기 코드를 실행해야 할 때 유용하게 사용됩니다. 예를 들어, 비동기 코드를 실행하고 싶지만 현재 컨텍스트가 동기적(Synchronous)일 경우, `Task`나 `Detached Task`를 사용해 새로운 비동기 컨텍스트를 생성하고, 그 안에서 비동기 함수를 호출할 수 있습니다. 또한, 작업의 생명 주기가 현재 코드 블록의 범위를 넘어야 하는 경우가 있습니다. 이처럼 구조화된 동시성을 사용하기 어려운 경우, `Task`와 `Detached Task`가 가장 적합한 선택지가 됩니다.
+예를 들어, 비동기 코드를 실행해야 하지만 현재 컨텍스트가 동기적인 경우, 작업의 생명 주기가 현재 코드 블록의 범위를 벗어나야 하는 경우, 우선순위나 실행 컨텍스트를 명시적으로 지정해야 하는 경우, `Task`와 `Detached Task`로 새로운 비동기 컨텍스트를 생성하는 게 적절한 해결책이 됩니다.
+
+그러나 이러한 유연성에는 대가가 따릅니다. `Task`와 `Detached Task`는 상위 작업(Parent Task)과 느슨하게 연결되어 있으며, 그 결과 구조화된 동시성에서 자동으로 제공되는 작업 간 취소 전파(Cancellation Propagation)가 이뤄지지 않습니다. 즉, 상위 작업이 취소되더라도 하위 작업도 자동으로 취소되지 않기 때문에, 취소 관리와 예외 처리는 개발자가  명시적으로 관리해야 합니다.
 
 
 ## Tasks That Inherit Context
 
-`Task`를 생성할 때 실행할 작업을 클로저로 전달하며, 생성과 동시에 작업이 실행됩니다. 즉, `URLSession`의 `resume()`처럼 별도의 재개 메서드를 호출할 필요가 없습니다. 생성된 `Task` 인스턴스를 통해 작업과 상호작용 할 수 있습니다. 예를 들어, 작업의 실행 결과를 기다리거나, 작업을 취소하는 등의 제어가 가능합니다.
+`Task`를 생성할 때, 수행할 작업을 `operation` 클로저 형태로 전달하며, 생성과 동시에 작업이 즉시 시작됩니다. `URLSession`의 `resume()` 메서드처럼 별도의 실행 시작 메서드를 호출할 필요가 없습니다. 
 
- 작업을 생성한 후에는 해당 인스턴스를 통해 작업과 상호작용할 수 있습니다. 예를 들어, 작업의 결과를 기다리거나 작업을 취소할 수 있습니다. 작업에 대한 참조를 유지하지 않더라도 작업은 즉시 실행되지만, 참조가 없다면 결과를 기다리거나 취소하는 등의 제어는 불가능합니다.
+작업이 생성되면, `Task` 인스턴스가 반환됩니다. 이 인스턴스를 통해 현재 진행 중인 작업과 상호작용할 수 있습니다. 예를 들어, 진행 중인 작업을 취소하거나, 작업의 결과를 받기 위해 기다리는 등의 동작이 가능합니다. 작업에 대한 참조를 유지하지 않더라도 작업은 계속 실행되지만, 참조가 없으면 작업의 결과를 기다리거나 취소하는 등의 제어를 할 수 없습니다.
 
 ```swift
 Task {
-    print("✅ 작업 1 실행 시작")
-    try? await Task.sleep(for: .seconds(1))
-    print("✅ 작업 1 실행 종료")
+    do {
+        print("Task 1 started")
+        try await Task.sleep(for: .seconds(1))
+        print("Task 1 ended")
+    } catch { ... }
 }
 
 let task: Task<Void, Never> = Task {
-    print("💰 작업 2 실행 시작")
-    await Task.yield()
-    print("💰 작업 2 실행 종료")
+    print("Task 2 started")
+    print("Task 2 ended")
 }
 
-Prints "✅ 작업 1 실행 시작"
-Prints "💰 작업 2 실행 시작"
-Prints "💰 작업 2 실행 종료"
-Prints "✅ 작업 1 실행 종료"
+// Print "Task 1 started"
+// Print "Task 2 started"
+// Print "Task 2 ended"
+// Print "Task 1 ended"
 ```
 
-`Task`는 생성될 때 현재 실행 중인 외부 작업의 컨텍스트를 자동으로 상속받습니다.
+생성된 `Task`는 액터, 작업 우선순위나 태스크-로컬 값 등 외부 작업의 컨텍스트를 상속받을 수 있습니다. 
 
 ```swift
 Task(priority: .background) { 
-    print("➡️ 외부 작업의 우선순위: \(Task.currentPriority)")
+    print("Outer task priority: \(Task.currentPriority)")
     
     Task { 
-        print("➡️ 내부 작업의 우선순위: \(Task.currentPriority)")
+        print("Inner task priority: \(Task.currentPriority)")
     }
 }
 
-// Prints "➡️ 외부 작업의 우선순위: TaskPriority.background"
-// Prints "➡️ 내부 작업의 우선순위: TaskPriority.background"
+// Print "Outer task priority: TaskPriority.background"
+// Print "Inner task priority: TaskPriority.background"
 ``` 
 
 
 ## Fully Independent Detached Tasks
 
-`Detached Task`는 현재 작업 컨텍스트와 완전히 분리된 최상위(top-level) 작업 컨텍스트를 생성합니다. 이 작업은 외부 `Task`의 작업 컨텍스트로부터 어떤 컨텍스트도 상속받지 않으며, 독립적으로 실행됩니다.
+`Detached Task`는 현재 작업 컨텍스트와 완전히 분리된 최상위(top-level) 작업 컨텍스트를 생성합니다. 이 작업은 생성된 작업 컨텍스트로부터 어떠한 상태도 상속받지 않으며, 완전히 독립적인 환경에서 실행됩니다. 다시 말해, `Detached Task`는 생성 시점의 외부 `Task`로부터 액터, 작업 우선순위나 태스크-로컬 등 컨텍스트를 상속받지 않고 를  어느 컨텍스트로 상속받지 않으며, 완전히 분리(detached)되어 깨끗한 상태에서 시작하게 됩니다. 
 
 ```swift
 Task(priority: .background) { 
-    print("➡️ 외부 작업의 우선순위: \(Task.currentPriority)")
+    print("외부 작업의 우선순위: \(Task.currentPriority)")
     
     Task.detached { 
-        print("➡️ 내부 작업의 우선순위: \(Task.currentPriority)")
+        print("내부 작업의 우선순위: \(Task.currentPriority)")
     }
 }
 
-// Print "➡️ 외부 작업의 우선순위: TaskPriority.background"
-// Print "➡️ 내부 작업의 우선순위: TaskPriority.medium"
+// Print "외부 작업의 우선순위: TaskPriority.background"
+// Print "내부 작업의 우선순위: TaskPriority.medium"
 ```
 
-`Detached Task`는 로깅, 캐시 저장, 통계 수집처럼 외부 작업의 컨텍스트에 영향을 받지 않고, 독립적으로 실행되어야 하는 백그라운드 작업에 적합합니다. 작업이 특정 컨텍스트의 제약을 받지 않고 자유롭게 실행되어야 할 때, `Detached Task`가 가장 알맞은 선택지가 됩니다.
+`Detached Task`는 명시적으로 작업 우선순위나 컨텍스트를 지정해야 하는 경우에 유용하게 사용됩니다. 이 작업은 외부 작업의 컨텍스트로부터 완전히 분리되어 독립적으로 실행되기 때문에, 로깅, 캐시 저장 등과 같이 외부 상태에 영향을 받지 않고 독립적으로 처리되어야 하는 작업에 적합합니다.
  
 
 ```swift
@@ -87,7 +90,7 @@ extension MyDelegate: UICollectionViewDelegate {
                                forItemAt item: IndexPath) {
         let ids = getThumbnailIDs(for: item)
         thumbnailTasks[item] = Task {
-            defer { thumbnailTasks[item] = nil}
+            defer { thumbnailTasks[item] = nil }
             let thumbnails = await fetchThumbnails (for: ids)
             Task.detached(priority: .background) {
                 self.writeToLocalCache(thumbnails)
@@ -105,33 +108,31 @@ extension MyDelegate: UICollectionViewDelegate {
 }
 ```
 
-위 예제에서는 `collectionView(_:willDisplay:)` 메서드는 셀이 화면에 표시되기 직전에 해당 셀에 보여줄 썸네일 이미지를 서버로부터 비동기적으로 불러옵니다. 썸네일을 불러오는 비동기 작업은 `Task`를 사용해 실행되며, 생성된 작업에 대한 참조는 `thumbnailTasks` 딕셔너리에 저장되어 필요 시 작업을 취소할 수 있습니다.
+위 예제에서 `collectionView(_:willDisplay:)` 메서드는 셀이 화면에 표시되기 직전에(willDisplay) 해당 셀에 보여줄 썸네일 이미지를 서버로부터 비동기적으로 불러옵니다. 썸네일을 불러오는 비동기 작업은 `Task`를 사용해 실행되며, 해당 작업에 대한 참조는 `thumbnailTasks` 딕셔너리에 저장되어, 셀이 화면에서 사라질 경우 필요에 따라 작업을 취소할 수 있습니다.
 
-썸네일을 성공적으로 불러온 후, 해당 이미지를 로컬 캐시에 저장하는 작업을 `Task.detached`를 사용해 실행합니다. `writeToLocalCache(_:)`는 디스크 I/O와 같이 비교적 무거운 백그라운드 작업에 해당되며, 외부 작업의 컨텍스트에 영향을 받을 필요가 없는 독립적인 작업입니다. 따라서, `Detached Task`를 통해 별도의 작업 컨텍스트에서 실행함으로써, 메인 스레드의 응답성을 방해하지 않도록 설계하는 것이 적절합니다.
+썸네일을 성공적으로 불러온 후, 해당 이미지를 로컬 캐시에 저장하는 작업은 `Detached Task`를 통해 실행됩니다. `writeToLocalCache(_:)`는 디스크 I/O와 같이 비교적 무거운 백그라운드 작업에 해당되며, UI 작업과 직접적인 연관되지 않기 때문에 별도의 작업 컨텍스트에서 독립적으로 처리하는 것이 적절합니다. 이를 `Detached Task`로 분리 실행하면, 메인 스레드의 작업 흐름을 방해하지 않으며서 앱의 전반적인 성능을 향상시킬 수 있습니다.
 
 아래 표는 `Task`와 `Detached Task`를 비교한 것입니다.
 
 |   | **Task** | **Detached Task** |
 | - | - | - |
 | 취소 전파 | ❌ | ❌ |
-| 자원 상속(Task-Local, 우선순위, 액터 등) | ✅ | ❌ |
+| 컨텍스트 상속(액터, 작업 우선순위, 태스크-로컬 등) | ✅ | ❌ |
 | 활용 | - 동기 코드에서 비동기 코드를 실행할 수 있는 비동기 컨텍스트를 생성할 때<br>- 작업의 생명 주기가 특정 코드 블록의 범위를 벗어나야 할 때 | - 외부 작업의 컨텍스트에 의존하지 않고, 완전히 독립적으로 실행되어야 할 때 |
 
-
-<!--현재는 detach 연산이 존재하여, 구조화된 동시성(Structured Concurrency)의 영역을 완전히 벗어나 호출 스코프를 초월해 살아남을 수 있도록 합니다. 그러나 이는 태스크-로컬 값(task-local values)과 충돌하는 문제를 일으킬 수 있습니다. 태스크-로컬 값은 전적으로 자식 작업(child tasks)이라는 구조화된 개념에 맞추어 설계되고 최적화되어 있기 때문입니다. 또한, detached task의 목적 자체가 생성된 컨텍스트로부터 “완전히 분리(detach)“되어 “깨끗한 상태에서 시작하는 것”입니다. 다시 말해, detached task는 호출 컨텍스트로부터 태스크-로컬 값을 상속하지 않으며(!), 이는 detached task가 호출 컨텍스트의 실행 컨텍스트나 우선순위를 상속하지 않는 것과 마찬가지입니다.-->
-
-
+<!-- 여기서부터 다시 검토 -->
 # Returning Results from a Task
 
-`Task`는 작업 완료 후 결과값을 반환할 수 있으며, 이 값은 `value` 프로퍼티를 통해 비동기적으로 접근할 수 있습니다. 결과를 가져오는 데 시간이 걸릴 수 있으므로, `value`는 `await` 키워드와 함께 사용해야 합니다. 만약 해당 작업이 예외를 던질 수 있다면, `await` 키워드 앞에 `try` 키워드도 함께 작성해야 합니다. 또한, `Task`는 `Sendable`한 값만 반환할 수 있습니다. 
+`Task`는 작업 완료 후 결과값을 반환할 수 있으며, 이 값은 `Task`의 `value` 프로퍼티를 통해 접근할 수 있습니다. 결과값을 비동기적으로 생성되므로, `value` 프로퍼티를 사용할 때는 `await` 키워드를 함께 사용해야 합니다. 또한, 작업 도중 예외가 발생할 수 있다면 `try` 키워드도 함께 작성해야 합니다. 참고로, `Task`가 반환할 수 있는 값은 동시 컨텍스트에서 안전하게 전달될 수 있는 `Sendable`한 값이어야 합니다. 
 
+<!-- 예제 수정 -->
 ```swift
-let task: Task<Int, Never> = Task {
+let task: Task<String, Never> = Task {
     await birthDay()
 }
-print("🎉 김소월의 생일은 \(await task.value)입니다.")
+print("김소월의 생일은 \(await task.value)입니다.")
 
-// Prints "🎉 김소월의 생일은 1998년 03월 21일입니다."
+// Print "김소월의 생일은 1998년 3월 21일입니다."
 ```
 
 {% hint style="info" %}
@@ -169,14 +170,14 @@ Swift 런타임은 작업 간 우선순위 역전(Priority Inversion)을 방지�
 
 ```swift
 let outerTask = Task(priority: .high) {
-    print("➡️ 외부 작업의 우선순위: \(Task.currentPriority)")
+    print("외부 작업의 우선순위: \(Task.currentPriority)")
     
     let innerTask = Task(priority: .low) {
-        print("➡️ 내부 작업의 우선순위: \(Task.currentPriority)")
+        print("내부 작업의 우선순위: \(Task.currentPriority)")
         
         try? await Task.sleep(for: .seconds(1))
         
-        print("➡️ 내부 작업의 우선순위: \(Task.currentPriority)")
+        print("내부 작업의 우선순위: \(Task.currentPriority)")
     }
     
     // 높은 우선순위의 외부 작업이 낮은 우선순위의 내부 작업이 결과값을 반환해주기를 기다립니다.
@@ -187,12 +188,12 @@ let outerTask = Task(priority: .high) {
 // 전체 작업이 종료될 때까지 기다립니다.
 _ = try? await outerTask.value
 
-Prints "➡️ 외부 작업의 우선순위: TaskPriority.high"
-Prints "➡️ 내부 작업의 우선순위: TaskPriority.low"
-Prints "➡️ 내부 작업의 우선순위: TaskPriority.high"
+Print "외부 작업의 우선순위: TaskPriority.high"
+Print "내부 작업의 우선순위: TaskPriority.low"
+Print "내부 작업의 우선순위: TaskPriority.high"
 ```
 
-또 다른 예로, 액터(Actor)가 낮은 우선순위의 작업을 실행 중일 때, 더 높은 우선순위의 작업이 해당 액터에 접근을 시도하면, 현재 실행 중인 작업의 우선순위가 일시적으로 승격될 수 있습니다. 
+또 다른 예로, 액터가 낮은 우선순위의 작업을 실행 중일 때, 더 높은 우선순위의 작업이 해당 액터에 접근을 시도하면, 현재 실행 중인 작업의 우선순위가 일시적으로 승격될 수 있습니다. 
 
 액터는 한 번에 하나의 작업만 처리할 수 있기 때문에, 낮은 우선순위의 작업이 액터의 큐(queue) 앞에 위치해 실행되고 있다면, 이후 도착한 높은 우선순위의 작업은 즉시 실행되지 못하고 대기하게 됩니다. Swift 런타임은 현재 실행 중인 작업의 우선순위를 일시적으로 승격시켜 높은 우선순위의 작업이 불필요하게 지연되지 않도록 합니다.
 
