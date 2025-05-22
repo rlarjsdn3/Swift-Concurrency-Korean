@@ -123,26 +123,26 @@ extension MyDelegate: UICollectionViewDelegate {
 <!-- 여기서부터 다시 검토 -->
 # Returning Results from a Task
 
-`Task`는 작업 완료 후 결과값을 반환할 수 있으며, 이 값은 `Task`의 `value` 프로퍼티를 통해 접근할 수 있습니다. 결과값을 비동기적으로 생성되므로, `value` 프로퍼티를 사용할 때는 `await` 키워드를 함께 사용해야 합니다. 또한, 작업 도중 예외가 발생할 수 있다면 `try` 키워드도 함께 작성해야 합니다. 참고로, `Task`가 반환할 수 있는 값은 동시 컨텍스트에서 안전하게 전달될 수 있는 `Sendable`한 값이어야 합니다. 
+`Task`는 작업이 완료되면 결과값을 반환할 수 있으며, 이 값은 `Task`의 `value` 프로퍼티를 통해 접근할 수 있습니다. 결과값을 비동기적으로 생성되기 때문에, `value` 프로퍼티를 사용할 때는 반드시 `await` 키워드를 함께 사용해야 합니다. 또한, 작업 도중 예외가 발생할 수 있는 경우에는 `try` 키워드도 함께 작성해야 합니다. 
 
-<!-- 예제 수정 -->
 ```swift
-let task: Task<String, Never> = Task {
-    await birthDay()
+let task = Task { () throws -> String in
+    return try await fetchTitle()
 }
-print("김소월의 생일은 \(await task.value)입니다.")
 
-// Print "김소월의 생일은 1998년 3월 21일입니다."
+let title = try await task.value
 ```
 
+참고로, `Task`가 반환하는 값은 동시 컨텍스트에서 안전하게 전달될 수 있는 `Sendable`한 값이어야 합니다. 이는 데이터 경합(data race)없이 다른 스레드에 안전하게 값을 전달하기 위함입니다.
+
 {% hint style="info" %}
-**Info** `Sendable` 프로토콜은 데이터 경합의 위험 없이 서로 다른 동시 컨텍스트(스레드)에서 안전하게 공유할 수 있는 타입입니다. ~~자세한 내용은 [Sendable](programming-guide/Sendable.md) 문서를 참조하세요.~~
+**Info** `Sendable` 프로토콜은 데이터 경합의 위험 없이 서로 다른 동시 컨텍스트(스레드) 간에 안전하게 공유할 수 있는 타입을 나타냅니다. ~~자세한 내용은 [Sendable](programming-guide/Sendable.md) 문서를 참조하세요.~~
 {% endhint %}
 
 
-# Task Priority and Priority Escalation to Prevent Inversion
+# Task Priority
 
-`Task`는 우선순위를 설정할 수 있습니다. 아래 표는 사용할 수 있는 우선순위 값들을 보여줍니다.
+`Task`에 우선순위를 설정할 수 있습니다. 아래 표는 사용할 수 있는 우선순위 값들을 보여줍니다.
 
 | 종류 | 원시값 |
 | - | - |
@@ -162,50 +162,46 @@ Task(priority: .utility) { ... }
 Task(priority: .background) { ... }
 ```
 
-## Priority Escalation
+## Priority Escalation to Prevent Inversion
 
-Swift 런타임은 작업 간 우선순위 역전(Priority Inversion)을 방지하기 위해, 특정 상황에서 작업의 우선순위를 일시적으로 승격시킬 수 있습니다. 
+Swift 런타임은 작업 간 우선순위 역전(Priority Inversion)을 방지하기 위해, 일부 상황에서 작업의 우선순위를 일시적으로 승격시킬 수 있습니다. 
 
-예를 들어, 높은 우선순위의 외부 `Task`에서 내부 `Task`의 결과값을 `value`를 통해 기다리는 경우, 런타임은 해당 결과를 계산 중인 내부 `Task`의 우선순위를 외부 `Task`의 우선순위 수준으로 일시적으로 승격시켜 결과를 빠르게 반환할 수 있도록 합니다. 
+예를 들어, 높은 우선순위의 외부 `Task`에서 내부 `Task`의 결과값을 `value`를 통해 기다리는 경우, 런타임은 해당 결과를 계산 중인 내부 `Task`의 우선순위를 외부 `Task`의 우선순위 수준으로 일시적으로 승격시킵니다. 이를 통해 외부 `Task`가 빠르게 결과를 받을 수 있도록 하며, 우선순위 역전을 방지합니다.
 
 ```swift
 let outerTask = Task(priority: .high) {
-    print("외부 작업의 우선순위: \(Task.currentPriority)")
+    print("Outer task priority: \(Task.currentPriority)")
     
     let innerTask = Task(priority: .low) {
-        print("내부 작업의 우선순위: \(Task.currentPriority)")
+        print("Inner task priority (before sleep): \(Task.currentPriority)")
         
         try? await Task.sleep(for: .seconds(1))
         
-        print("내부 작업의 우선순위: \(Task.currentPriority)")
+        print("Inner task priority (after sleep): \(Task.currentPriority)")
     }
     
-    // 높은 우선순위의 외부 작업이 낮은 우선순위의 내부 작업이 결과값을 반환해주기를 기다립니다.
+    // The high-priority outer task waits for the result of the low-priority inner task.
     try? await Task.sleep(for: .seconds(0.5))
     _ = try? await innerTask.value
 }
 
-// 전체 작업이 종료될 때까지 기다립니다.
 _ = try? await outerTask.value
 
-Print "외부 작업의 우선순위: TaskPriority.high"
-Print "내부 작업의 우선순위: TaskPriority.low"
-Print "내부 작업의 우선순위: TaskPriority.high"
+Print "Outer task priority: TaskPriority.high"
+Print "Inner task priority (before sleep): TaskPriority.low"
+Print "Inner task priority (after sleep): TaskPriority.high"
 ```
 
-또 다른 예로, 액터가 낮은 우선순위의 작업을 실행 중일 때, 더 높은 우선순위의 작업이 해당 액터에 접근을 시도하면, 현재 실행 중인 작업의 우선순위가 일시적으로 승격될 수 있습니다. 
-
-액터는 한 번에 하나의 작업만 처리할 수 있기 때문에, 낮은 우선순위의 작업이 액터의 큐(queue) 앞에 위치해 실행되고 있다면, 이후 도착한 높은 우선순위의 작업은 즉시 실행되지 못하고 대기하게 됩니다. Swift 런타임은 현재 실행 중인 작업의 우선순위를 일시적으로 승격시켜 높은 우선순위의 작업이 불필요하게 지연되지 않도록 합니다.
+또 다른 예로, 액터가 낮은 우선순위의 작업을 실행 중일 때, 더 높은 우선순위의 작업이 해당 액터에 접근을 시도하면, 현재 실행 중인 작업의 우선순위가 일시적으로 승격될 수 있습니다. 액터는 한 번에 하나의 작업만 처리할 수 있기 때문에, 낮은 우선순위의 작업이 액터의 큐(queue) 앞에 위치해 실행 중이라면, 이후에 도착한 높은 우선순위의 작업은 즉시 실행되지 못하고 대기하게 됩니다. 이러한 상황에서 런타임은 현재 실행 중인 작업의 우선순위를 일시적으로 승격시켜, 높은 우선순위의 작업이 불필요하게 지연되지 않도록 합니다.
 
 {% hint style="info" %}
 **Info** 액터는 재진입성(Re-Entrancy)을 통해 작업 간 우선순위를 보다 유연하게 조정할 수도 있습니다. ~~자세한 내용은 [Actor]() 문서를 참조하세요.~~
 {% endhint %}
 
 
-# Task and [weak self] Capture
+# Task does not require [weak self]
 
-`Task`는 생성 시점에 클로저 내부에서 참조되는 객체들을 캡처하지만, 작업이 완료되면 해당 참조들은 `Task` 인스턴스의 참조 여부와 상관없이 자동으로 해제됩니다. 이 덕분에 `Task`의 클로저에서는 일반적으로 `self`를 `[weak self]`로 약하게 캡처할 필요가 없습니다. 
-
+`Task`를 생성할 때, `operation` 클로저에서 `self`를 강하게 참조한다 하더라도 일반적으로 문제가 되지 않습니다. `Task` 인스턴스의 참조 여부와 별개로, 작업이 완료되면 해당 클로저에서 캡처된 모든 참조(`self`)들은 자동으로 해제됩니다. 이로 인해, `Task`의 `operation` 클로저 안에서 `self`를 `[weak self]`로 약하게 캡처할 필요는 없습니다.
 
 ```swift
 struct Work: Sendable { }
@@ -216,7 +212,7 @@ actor Worker {
     
     deinit {
         // even though the task is still retained,
-        // once it completes it no lognre causes a reference cycle with the actor
+        // once it completes it no longer causes a reference cycle with the actor
         
         print("deinit actor")
     }
@@ -234,16 +230,25 @@ actor Worker {
 }
 Task { await Worker().start() }
 
-Prints "start task work"
-Prints "completed task work"
-Prints "deinit actor"
+Print "start task work"
+Print "completed task work"
+Print "deinit actor"
 ```
 
-예를 들어, 위 예제의 `start()` 메서드에서 생성된 `Task`는 실행 중 `Worker` 액터를 강하게 참조합니다. 하지만, 작업이 완료되면 해당 참조가 자동으로 해제되어, `Task`와 액터 간에 순환 참조(retain cycle)가 발생하지 않습니다.
-
+예를 들어, 위 예제에서 `start()` 메서드에서 생성된 `Task`는 `Worker` 액터를 강하게 참조합니다. 동시에 `Worker` 액터도 `work` 프로퍼티를 통해 해당 `Task`를 강하게 참조하고 있습니다. 일반적으로 이러한 상호 참조는 순환 참조(retain cycle)을 유발할 수 있지만, 작업이 완료되면 `Task` 내부에서 캡처한 모든 참조는 자동으로 해제되므로 순환 참조가 발생하지 않습니다.
 
 {% hint style="info" %}
-**Note** `Task`는 생성 시점의 컨텍스트와 `self`를 자동으로 캡처합니다. 따라서, 명시적으로 `self`를 캡처할 필요가 전혀 없습니다.
+**Note** `Task`는 생성 시점에 `self`를 암시적으로 캡처합니다. 따라서 `operation` 클로저 내부에서 `self.fetchData()`처럼 명시적으로 `self`를 작성할 필요가 없습니다.
+
+```swift
+class Manager {
+    func load() {
+        Task {
+            fetchData() // 'self' is implicitly captured
+        }
+    }
+}
+```
 {% endhint %}
 
 
