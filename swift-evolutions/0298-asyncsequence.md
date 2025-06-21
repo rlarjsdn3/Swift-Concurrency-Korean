@@ -1,14 +1,28 @@
 # Async/Await: Sequences
 
-* Proposal: [SE-0298](0298-asyncsequence.md)
-* Authors: [Tony Parker](https://github.com/parkera), [Philippe Hausler](https://github.com/phausler)
-* Review Manager: [Doug Gregor](https://github.com/DougGregor)
-* Status: **Implemented (Swift 5.5)**
-* Implementation: [apple/swift#35224](https://github.com/apple/swift/pull/35224)
-* Decision Notes: [Rationale](https://forums.swift.org/t/accepted-with-modification-se-0298-async-await-sequences/44231)
-* Revision: Based on [forum discussion](https://forums.swift.org/t/pitch-clarify-end-of-iteration-behavior-for-asyncsequence/45548)
+* 제안: [SE-0298](0298-asyncsequence.md)
+* 저자: [Tony Parker](https://github.com/parkera), [Philippe Hausler](https://github.com/phausler)
+* 리뷰 매니저: [Doug Gregor](https://github.com/DougGregor)
+* 상태: **구현됨 (Swift 5.5)**
+* 구현: [apple/swift#35224](https://github.com/apple/swift/pull/35224)
+* 결정 기록: [Rationale](https://forums.swift.org/t/accepted-with-modification-se-0298-async-await-sequences/44231)
+* 개정: Based on [forum discussion](https://forums.swift.org/t/pitch-clarify-end-of-iteration-behavior-for-asyncsequence/45548)
 
 ## Introduction
+
+Swift의 [async/await](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0296-async-await.md) 기능은 (미래의 어느 시점에) 단일 값을 반환하는 비동기 함수를 직관적이고 내장된 방식으로 작성하고 사용할 수 있도록 도와줍니다. 우리는 이 기능을 기반으로 하여, 시간이 지남에 따라 여러 값을 반환하는 함수를 직관적이고 내장된 방식으로 작성하고 사용할 수 있는 기능을 제안합니다.
+
+이 제안은 다음과 같은 요소로 이루어져 있습니다:
+
+1. 비동기 시퀀스(asynchornous sequence)를 표현하는 프로토콜의 표준 라이브러리 정의
+
+2. 비동기 시퀀스에 대해 `for...in` 구문을 사용할 수 있도록 하는 컴파일러 지원
+
+3. 비동기 시퀀스를 다루는 데 자주 사용되는 함수들의 표준 라이브러리 구현
+
+<details>
+
+<summary>원문 보기</summary>
 
 Swift's [async/await](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0296-async-await.md) feature provides an intuitive, built-in way to write and use functions that return a single value at some future point in time. We propose building on top of this feature to create an intuitive, built-in way to write and use functions that return many values over time.
 
@@ -18,7 +32,24 @@ This proposal is composed of the following pieces:
 2. Compiler support to use `for...in` syntax on an asynchronous sequence of values
 3. A standard library implementation of commonly needed functions that operate on an asynchronous sequence of values
 
+</details>
+
 ## Motivation
+
+비동기 시퀀스를 순회하는 작업은 동기 시퀀스를 순회하는 것만큼 간단하길 바랍니다. 예를 들어, 파일의 각 줄을 하나씩 읽는 경우를 생각해볼 수 있습니다:
+
+```swift
+for try await line in myFile.lines() {
+  // Do something with each line
+}
+```
+
+Swift 개발자에게 이미 익숙한 `for...in` 구문을 사용함으로써, 비동기 API를 다루는 진입 장벽을 낮출 수 있습니다. 다른 Swift 타입 및 개념들과의 일관성 역시 우리가 추구하는 가장 중요한 목표 중 하나입니다. 이 구문에서 `await` 키워드를 사용하도록 요구함으로써, 동기 시퀀스와의 차이를 분명히 할 수 있습니다.
+
+
+<details>
+
+<summary>원문 보기</summary>
 
 We'd like iterating over asynchronous sequences of values to be as easy as iterating over synchronous sequences of values. An example use case is iterating over the lines in a file, like this:
 
@@ -29,7 +60,36 @@ for try await line in myFile.lines() {
 ```
 
 Using the `for...in` syntax that Swift developers are already familiar with will reduce the barrier to entry when working with asynchronous APIs. Consistency with other Swift types and concepts is therefore one of our most important goals. The requirement of using the `await` keyword in this loop will distinguish it from synchronous sequences.
+
+</details>
+
+
+
 ### `for/in` Syntax
+
+`for in` 구문을 사용할 수 있도록 하려면, `func lines()`의 반환 타입이 컴파일러가 순회 가능한 것으로 인식할 수 있는 타입이어야 합니다. 현재 Swift에는 `Sequence` 프로토콜이 존재합니다. 여기서 이를 한번 사용해보겠습니다:
+
+```swift
+extension URL {
+  struct Lines: Sequence { /* ... */ }
+  func lines() async -> Lines
+}
+```
+
+불행히도, 위 함수는 실제로 **모든** 줄이 준비될 때까지 기다린 후에야 반환됩니다. 그러나 우리가 원했던 방식은 각 줄을 하나씩 기다린 후(await) 순차적으로 처리하는 것이었습니다. 물론 `lines` 함수를 수정해 다르게 동작하도록(예: 참조 타입으로 결과를 반환하게) 만드는 것도 상상해볼 수 있지만, 이러한 순회 작업을 최대한 단순하게 만들기 위해서는 새로운 프로토콜을 정의하는 것이 더 나은 방법입니다.
+
+```swift
+extension URL {
+  struct Lines: AsyncSequence { /* ... */ }
+  func lines() async -> Lines
+}
+```
+
+`AsyncSequence`는 연관된 이터레이터(iterator) 타입에 비동기 `next()` 함수를 정의함으로써, 전체 결과가 아니라 각 요소를 하나씩 기다릴 수 있도록 합니다.
+
+<details>
+
+<summary>원문 보기</summary>
 
 To enable the use of `for in`, we must define the return type from `func lines()` to be something that the compiler understands can be iterated. Today, we have the `Sequence` protocol. Let's try to use it here:
 
@@ -51,7 +111,56 @@ extension URL {
 
 `AsyncSequence` allows for waiting on each element instead of the entire result by defining an asynchronous `next()` function on its associated iterator type.
 
+</details>
+
 ### Additional AsyncSequence functions
+
+한 걸음 더 나아가서, 새로 만든 `lines` 함수를 다양한 곳에서 어떻게 사용할 수 있을지 상상해봅시다. 예를 들어, 특정 길이를 초과하는 줄을 만날 때까지만 줄을 처리하고 싶을 수 있습니다.
+
+```swift
+let longLine: String?
+do {
+  for try await line in myFile.lines() {
+    if line.count > 80 {
+      longLine = line
+      break
+    }
+  }
+} catch {
+  longLine = nil // file didn't exist
+}
+```
+
+또는, 작업을 시작하기 전에 파일의 모든 줄을 읽어오고 싶을 수도 있습니다.
+
+```swift
+var allLines: [String] = []
+do {
+  for try await line in myFile.lines() {
+    allLines.append(line)
+  }
+} catch {
+  allLines = []
+}
+```
+
+위 코드는 아무런 문제가 없으며, 개발자가 이를 작성할 수 있어야 합니다. 하지만, 자주 사용될 수 있는 일반적인 작업치고는 보일러플레이트(boilerplate)가 많아 보입니다. 이를 해결하는 한 가지 방법은 `URL`에 더 많은 함수를 추가하는 것입니다:
+
+```swift
+extension URL {
+  struct Lines : AsyncSequence { }
+
+  func lines() -> Lines
+  func firstLongLine() async throws -> String?
+  func collectLines() async throws -> [String]
+}
+```
+
+비슷한 작업이 필요한 다른 경우들도 쉽게 떠올릴 수 있습니다. 따라서, 이러한 함수들을 `URL`에 직접 추가하기보다는 (`Sequence`와 마찬가지로) 일반적으로 활용할 수 있도록 `AsyncSequence`에 제네릭 확장으로 정의하는 게 가장 적절하다고 생각합니다.
+
+<details>
+
+<summary>원문 보기</summary>
 
 Going one step further, let's imagine how it might look to use our new `lines` function in more places. Perhaps we want to process lines until we reach one that is greater than a certain length.
 
@@ -96,7 +205,81 @@ extension URL {
 
 It doesn't take much imagination to think of other places where we may want to do similar operations, though. Therefore, we believe the best place to put these functions is instead as an extension on `AsyncSequence` itself, specified generically -- just like `Sequence`.
 
+</details>
+
 ## Proposed solution
+
+표준 라이브러리에 다음과 같은 프로토콜을 정의할 예정입니다:
+
+```swift
+public protocol AsyncSequence {
+  associatedtype AsyncIterator: AsyncIteratorProtocol where AsyncIterator.Element == Element
+  associatedtype Element
+  __consuming func makeAsyncIterator() -> AsyncIterator
+}
+
+public protocol AsyncIteratorProtocol {
+  associatedtype Element
+  mutating func next() async throws -> Element?
+}
+```
+
+Swift 컴파일러는 `AsyncSequence`를 준수하는 모든 타입에 대해 `for in` 루프를 사용할 수 있도록 코드를 자동으로 생성합니다. 표준 라이브러리 또한 이 프로토콜을 확장하여 개발자에게 익숙한 제네릭 알고리즘들을 제공합니다. 아래 예제는 `next` 내부에서 실제로 `async` 함수를 호출하지 않지만, 기본적인 형태를 보여주는 예제입니다:
+
+```swift
+struct Counter : AsyncSequence {
+  let howHigh: Int
+
+  struct AsyncIterator : AsyncIteratorProtocol {
+    let howHigh: Int
+    var current = 1
+    mutating func next() async -> Int? {
+      // We could use the `Task` API to check for cancellation here and return early.
+      guard current <= howHigh else {
+        return nil
+      }
+
+      let result = current
+      current += 1
+      return result
+    }
+  }
+
+  func makeAsyncIterator() -> AsyncIterator {
+    return AsyncIterator(howHigh: howHigh)
+  }
+}
+```
+
+호출 지점에서는 `Counter`를 다음과 같이 사용할 수 있습니다:
+
+```swift
+for await i in Counter(howHigh: 3) {
+  print(i)
+}
+
+/* 
+Prints the following, and finishes the loop:
+1
+2
+3
+*/
+
+
+for await i in Counter(howHigh: 3) {
+  print(i)
+  if i == 2 { break }
+}
+/*
+Prints the following:
+1
+2
+*/
+```
+
+<details>
+
+<summary>원문 보기</summary>
 
 The standard library will define the following protocols:
 
@@ -166,6 +349,8 @@ Prints the following:
 */
 ```
 
+</details>
+
 ## Detailed design
 
 Returning to our earlier example:
@@ -187,6 +372,14 @@ while let line = try await it.next() {
 
 All of the usual rules about error handling apply. For example, this iteration must be surrounded by `do/catch`, or be inside a `throws` function to handle the error. All of the usual rules about `await` also apply. For example, this iteration must be inside a context in which calling `await` is allowed like an `async` function.
 
+<details>
+
+<summary>원문 보기</summary>
+
+
+
+</details>
+
 ### Cancellation
 
 `AsyncIteratorProtocol` types should use the cancellation primitives provided by Swift's `Task` API, part of [structured concurrency](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md). As described there, the iterator can choose how it responds to cancellation. The most common behaviors will be either throwing `CancellationError` or returning `nil` from the iterator. 
@@ -196,21 +389,53 @@ If an `AsyncIteratorProtocol` type has cleanup to do upon cancellation, it can d
 1. After checking for cancellation using the `Task` API.
 2. In its `deinit` (if it is a class type).
 
+<details>
+
+<summary>원문 보기</summary>
+
+
+
+</details>
+
 ### Rethrows
 
 This proposal will take advantage of a separate proposal to add specialized `rethrows` conformance in a protocol, pitched [here](https://forums.swift.org/t/pitch-rethrowing-protocol-conformances/42373). With the changes proposed there for `rethrows`, it will not be required to use `try` when iterating an `AsyncSequence` which does not itself throw.
 
 The `await` is always required because the definition of the protocol is that it is always asynchronous.
 
+<details>
+
+<summary>원문 보기</summary>
+
+
+
+</details>
+
 ### End of Iteration
 
 After an `AsyncIteratorProtocol` types returns `nil` or throws an error from its `next()` method, all future calls to `next()` must return `nil`. This matches the behavior of `IteratorProtocol` types and is important, since calling an iterator's `next()` method is the only way to determine whether iteration has finished.
+
+<details>
+
+<summary>원문 보기</summary>
+
+
+
+</details>
 
 ## AsyncSequence Functions
 
 The existence of a standard `AsyncSequence` protocol allows us to write generic algorithms for any type that conforms to it. There are two categories of functions: those that return a single value (and are thus marked as `async`), and those that return a new `AsyncSequence` (and are not marked as `async` themselves).
 
 The functions that return a single value are especially interesting because they increase usability by changing a loop into a single `await` line. Functions in this category are `first`, `contains`, `min`, `max`, `reduce`, and more. Functions that return a new `AsyncSequence` include `filter`, `map`, and `compactMap`.
+
+<details>
+
+<summary>원문 보기</summary>
+
+
+
+</details>
 
 ### AsyncSequence to single value
 
@@ -255,6 +480,14 @@ The following functions will be added to `AsyncSequence`:
 | `reduce<T>(_ initialResult: T, _ nextPartialResult: (T, Element) async throws -> T) async rethrows -> T` | |
 | `reduce<T>(into initialResult: T, _ updateAccumulatingResult: (inout T, Element) async throws -> ()) async rethrows -> T` | |
 
+<details>
+
+<summary>원문 보기</summary>
+
+
+
+</details>
+
 ### AsyncSequence to AsyncSequence
 
 These functions on `AsyncSequence` return a result which is itself an `AsyncSequence`. Due to the asynchronous nature of `AsyncSequence`, the behavior is similar in many ways to the existing `Lazy` types in the standard library. Calling these functions does not eagerly `await` the next value in the sequence, leaving it up to the caller to decide when to start that work by simply starting iteration when they are ready.
@@ -289,6 +522,14 @@ For each of these functions, we first define a type which conforms with the `Asy
 | `prefix(while: (Element) async throws -> Bool) async rethrows -> AsyncPrefixWhileSequence` |
 | `prefix(_ n: Int) async rethrows -> AsyncPrefixSequence` |
 | `filter(_ predicate: (Element) async throws -> Bool) async rethrows -> AsyncFilterSequence` |
+
+<details>
+
+<summary>원문 보기</summary>
+
+
+
+</details>
 
 ## Future Proposals
 
