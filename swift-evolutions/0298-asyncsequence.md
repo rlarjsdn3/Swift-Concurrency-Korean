@@ -85,7 +85,7 @@ extension URL {
 }
 ```
 
-`AsyncSequence`는 연관된 이터레이터(iterator) 타입에 비동기 `next()` 함수를 정의함으로써, 전체 결과가 아니라 각 요소를 하나씩 기다릴 수 있도록 합니다.
+`AsyncSequence`는 연관된 반복자(iterator) 타입에 비동기 `next()` 함수를 정의함으로써, 전체 결과가 아니라 각 요소를 하나씩 기다릴 수 있도록 합니다.
 
 <details>
 
@@ -224,7 +224,7 @@ public protocol AsyncIteratorProtocol {
 }
 ```
 
-Swift 컴파일러는 `AsyncSequence`를 준수하는 모든 타입에 대해 `for in` 루프를 사용할 수 있도록 코드를 자동으로 생성합니다. 표준 라이브러리 또한 이 프로토콜을 확장하여 개발자에게 익숙한 제네릭 알고리즘들을 제공합니다. 아래 예제는 `next` 내부에서 실제로 `async` 함수를 호출하지 않지만, 기본적인 형태를 보여주는 예제입니다:
+Swift 컴파일러는 `AsyncSequence`를 준수하는 모든 타입에 대해 `for in` 반복문을 사용할 수 있도록 코드를 자동으로 생성합니다. 표준 라이브러리 또한 이 프로토콜을 확장하여 개발자에게 익숙한 제네릭 알고리즘들을 제공합니다. 아래 예제는 `next` 내부에서 실제로 `async` 함수를 호출하지 않지만, 기본적인 형태를 보여주는 예제입니다:
 
 ```swift
 struct Counter : AsyncSequence {
@@ -353,6 +353,29 @@ Prints the following:
 
 ## Detailed design
 
+앞서 살펴본 예제로 돌아가서:
+
+```swift
+for try await line in myFile.lines() {
+  // Do something with each line
+}
+```
+
+Swift 컴파일러는 다음 코드와 동일한 결과를 생성합니다:
+
+```swift
+var it = myFile.lines().makeAsyncIterator()
+while let line = try await it.next() {
+  // Do something with each line
+}
+```
+
+일반적인 예외 처리 규칙이 모두 적용됩니다. 예를 들어, 이 반복문은 예외를 처리하기 위해 `do/catch`로 감싸져야 하거나, `throws` 함수 내부에 있어야 합니다. 또한, `await`에 대한 일반적인 규칙도 모두 적용됩니다. 예를 들어, 이 반복문은 `await` 호출이 허용되는 `async` 함수와 같은 컨텍스트에서 호출되어야 합니다.
+
+<details>
+
+<summary>원문 보기</summary>
+
 Returning to our earlier example:
 
 ```swift
@@ -372,15 +395,21 @@ while let line = try await it.next() {
 
 All of the usual rules about error handling apply. For example, this iteration must be surrounded by `do/catch`, or be inside a `throws` function to handle the error. All of the usual rules about `await` also apply. For example, this iteration must be inside a context in which calling `await` is allowed like an `async` function.
 
-<details>
-
-<summary>원문 보기</summary>
-
-
-
 </details>
 
 ### Cancellation
+
+`AsyncIteratorProtocol` 타입은 Swift의 `Task` API에서 제공하는 취소 프리미티브(cancellation primitives)를 사용해야 하며, 이는 [구조화된 동시성](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md)의 일부입니다. 해당 문서에서 설명한 바와 같이, 반복자(iterator)는 취소에 어떻게 응답할지 선택할 수 있습니다. 가장 기본적인 동작은 `CancellationError`를 던지거나, 반복자에서 `nil`을 반환하는 것입니다.
+
+`AsyncIteratorProtocol` 타입이 취소 시 수행해야 할 정리 작업이 있는 경우, 다음 두 곳에서 이를 처리할 수 있습니다.
+
+1. `Task` API를 사용하여 취소 여부를 확인한 이후
+
+2. 클래스 타입인 경우에는 해당 타입의 `deinit` 내에서
+
+<details>
+
+<summary>원문 보기</summary>
 
 `AsyncIteratorProtocol` types should use the cancellation primitives provided by Swift's `Task` API, part of [structured concurrency](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0304-structured-concurrency.md). As described there, the iterator can choose how it responds to cancellation. The most common behaviors will be either throwing `CancellationError` or returning `nil` from the iterator. 
 
@@ -389,55 +418,98 @@ If an `AsyncIteratorProtocol` type has cleanup to do upon cancellation, it can d
 1. After checking for cancellation using the `Task` API.
 2. In its `deinit` (if it is a class type).
 
-<details>
-
-<summary>원문 보기</summary>
-
-
-
 </details>
 
 ### Rethrows
 
-This proposal will take advantage of a separate proposal to add specialized `rethrows` conformance in a protocol, pitched [here](https://forums.swift.org/t/pitch-rethrowing-protocol-conformances/42373). With the changes proposed there for `rethrows`, it will not be required to use `try` when iterating an `AsyncSequence` which does not itself throw.
+이 제안은 [여기](https://forums.swift.org/t/pitch-rethrowing-protocol-conformances/42373)에서 제안된 프로토콜에 특수한 `rethrows` 적합성(conformance)을 추가하는 방안을 활용합니다. 해당 제안에서 제시된 `rethrows` 관련 변경 사항이 적용되면, 자체적으로 예외를 던지지 않는 `AsyncSequence`를 순회할 때 `try`를 사용할 필요가 없어집니다.
 
-The `await` is always required because the definition of the protocol is that it is always asynchronous.
+`await`은 항상 필요합니다. `AsyncIteratorProtocol` 타입의 정의 자체가 항상 비동기적이기 때문입니다.
 
 <details>
 
 <summary>원문 보기</summary>
 
+This proposal will take advantage of a separate proposal to add specialized rethrows conformance in a protocol, pitched [here]((https://forums.swift.org/t/pitch-rethrowing-protocol-conformances/42373)). With the changes proposed there for rethrows, it will not be required to use try when iterating an AsyncSequence which does not itself throw.
 
+The await is always required because the definition of the protocol is that it is always asynchronous.
 
 </details>
 
 ### End of Iteration
 
-After an `AsyncIteratorProtocol` types returns `nil` or throws an error from its `next()` method, all future calls to `next()` must return `nil`. This matches the behavior of `IteratorProtocol` types and is important, since calling an iterator's `next()` method is the only way to determine whether iteration has finished.
+`AsyncIteratorProtocol` 타입이 `next()` 메서드에서 `nil`을 반환하거나 예외를 던진 이후, 모든 `next()` 호출에서 반드시 `nil`을 반환해야 합니다. 이는 `IteratorProtocol` 타입의 동작과 일치하며, 반복이 종료되었는지를 확인할 수 있는 유일한 수단이 반복자의 `next()` 메서드를 호출하는 것이기 때문에 매우 중요합니다.
 
 <details>
 
 <summary>원문 보기</summary>
 
-
+After an `AsyncIteratorProtocol` types returns `nil` or throws an error from its `next()` method, all future calls to `next()` must return `nil`. This matches the behavior of `IteratorProtocol` types and is important, since calling an iterator's `next()` method is the only way to determine whether iteration has finished.
 
 </details>
 
 ## AsyncSequence Functions
 
-The existence of a standard `AsyncSequence` protocol allows us to write generic algorithms for any type that conforms to it. There are two categories of functions: those that return a single value (and are thus marked as `async`), and those that return a new `AsyncSequence` (and are not marked as `async` themselves).
+표준 `AsyncSequence` 프로토콜의 존재는 이를 준수하는 모든 타입에 대해 제네릭 알고리즘을 작성할 수 있게 합니다. 이러한 함수들은 두 가지 범주로 나눌 수 있습니다. 하나는 단일 값을 반환하는 함수이며, `async`로 표시됩니다. 다른 하나는 `AsyncSequence`를 반환하는 함수이며, `async`로 표시되지 않습니다.
 
-The functions that return a single value are especially interesting because they increase usability by changing a loop into a single `await` line. Functions in this category are `first`, `contains`, `min`, `max`, `reduce`, and more. Functions that return a new `AsyncSequence` include `filter`, `map`, and `compactMap`.
+단일 값을 반환하는 함수들은 특히 흥미롭습니다. 반복문을 하나의 `await` 문으로 대체함으로써 사용성을 크게 향상시키기 때문입니다. 이 범주에 속하는 함수들로는 `first`, `contains`, `min`, `max`, `reduce` 등이 있습니다. 한편, 새로운 `AsyncSequence`를 반환하는 함수들로는 `filter`, `map`과 `compactMap` 등이 있습니다.
 
 <details>
 
 <summary>원문 보기</summary>
 
+The existence of a standard `AsyncSequence` protocol allows us to write generic algorithms for any type that conforms to it. There are two categories of functions: those that return a single value (and are thus marked as `async`), and those that return a new `AsyncSequence` (and are not marked as `async` themselves).
 
+The functions that return a single value are especially interesting because they increase usability by changing a loop into a single `await` line. Functions in this category are `first`, `contains`, `min`, `max`, `reduce`, and more. Functions that return a new `AsyncSequence` include `filter`, `map`, and `compactMap`.
 
 </details>
 
 ### AsyncSequence to single value
+
+반복문을 단 하나의 호출로 줄여주는 알고리즘은 코드의 가독성을 향상시킬 수 있습니다. 이러한 알고리즘은 반복문을 생성하고 순회하는 데 필요한 보일러플레이트 코드를 줄여줍니다.
+
+예를 들어, `contains` 함수를 한번 살펴봅시다:
+
+```swift
+extension AsyncSequence where Element : Equatable {
+  public func contains(_ value: Element) async rethrows -> Bool
+}
+```
+
+이 확장을 사용하면, 앞서 언급했던 "첫 번째로 긴 줄 찾기" 예제를 다음과 같이 단순하게 표현할 수 있습니다:
+
+```swift
+let first = try? await myFile.lines().first(where: { $0.count > 80 })
+```
+
+또는, 시퀀스를 비동기적으로 처리하고 나중에 사용해야 하는 경우에는:
+
+```swift
+async let first = myFile.lines().first(where: { $0.count > 80 })
+
+// later
+
+warnAboutLongLine(try? await first)
+```
+
+다음과 같은 함수들이 `AsyncSequence`에 추가될 예정입니다:
+
+| Function | Note |
+| - | - |
+| `contains(_ value: Element) async rethrows -> Bool` | Requires `Equatable` element |
+| `contains(where: (Element) async throws -> Bool) async rethrows -> Bool` | The `async` on the closure allows optional async behavior, but does not require it |
+| `allSatisfy(_ predicate: (Element) async throws -> Bool) async rethrows -> Bool` | |
+| `first(where: (Element) async throws -> Bool) async rethrows -> Element?` | |
+| `min() async rethrows -> Element?` | Requires `Comparable` element |
+| `min(by: (Element, Element) async throws -> Bool) async rethrows -> Element?` | |
+| `max() async rethrows -> Element?` | Requires `Comparable` element |
+| `max(by: (Element, Element) async throws -> Bool) async rethrows -> Element?` | |
+| `reduce<T>(_ initialResult: T, _ nextPartialResult: (T, Element) async throws -> T) async rethrows -> T` | |
+| `reduce<T>(into initialResult: T, _ updateAccumulatingResult: (inout T, Element) async throws -> ()) async rethrows -> T` | |
+
+<details>
+
+<summary>원문 보기</summary>
 
 Algorithms that reduce a for loop into a single call can improve readability of code. They remove the boilerplate required to set up and iterate a loop.
 
@@ -480,19 +552,51 @@ The following functions will be added to `AsyncSequence`:
 | `reduce<T>(_ initialResult: T, _ nextPartialResult: (T, Element) async throws -> T) async rethrows -> T` | |
 | `reduce<T>(into initialResult: T, _ updateAccumulatingResult: (inout T, Element) async throws -> ()) async rethrows -> T` | |
 
-<details>
-
-<summary>원문 보기</summary>
-
-
-
 </details>
 
 ### AsyncSequence to AsyncSequence
 
+`AsyncSequence`의 이러한 함수들은 반환값 자체가 또 다른 `AsyncSequence`가 될 수 있습니다. `AsyncSequence`는 비동기적으로 동작하기 때문에, 이러한 동작 방식은 표준 라이브러리에 있는 `Lazy` 타입들과 여러 면에서 유사합니다. 이러한 함수들을 호출하더라도 시퀀스의 다음 값을 즉시 `await`하지 않으며, 실제로 언제 반복을 시작할지는 호출자에게 달려있습니다. 호출자가 반복을 시작하면, 그 시점에 비로소 작업이 수행됩니다. 
+
+예를 들어, `map` 함수를 살펴보겠습니다:
+
+```swift
+extension AsyncSequence {
+  public func map<Transformed>(
+    _ transform: @escaping (Element) async throws -> Transformed
+  ) -> AsyncMapSequence<Self, Transformed>
+}
+
+public struct AsyncMapSequence<Upstream: AsyncSequence, Transformed>: AsyncSequence {
+  public let upstream: Upstream
+  public let transform: (Upstream.Element) async throws -> Transformed
+  public struct Iterator : AsyncIterator { 
+    public mutating func next() async rethrows -> Transformed?
+  }
+}
+```
+
+먼저, 각 함수마다 `AsyncSequence` 프로토콜을 준수하는 타입을 정의합니다. 이 타입의 이름은 `LazyDropWhileCollection`이나 `LazyMapSequence`처럼 표준 라이브러리의 기존 `Sequence` 타입을 참고하여 설계되었습니다. 그런 다음, `AsyncSequence`에 대한 확장(extension)을 통해 해당 타입의 인스턴스를 생성하는 함수를 추가하고, 이 함수는 `self`를 상위 시퀀스(`upstream`)로 사용하여 새로운 타입을 반환합니다.
+
+| Function |
+| - |
+| `map<T>(_ transform: (Element) async throws -> T) -> AsyncMapSequence` |
+| `compactMap<T>(_ transform: (Element) async throws -> T?) -> AsyncCompactMapSequence` |
+| `flatMap<SegmentOfResult: AsyncSequence>(_ transform: (Element) async throws -> SegmentOfResult) async rethrows -> AsyncFlatMapSequence` |
+| `drop(while: (Element) async throws -> Bool) async rethrows -> AsyncDropWhileSequence` |
+| `dropFirst(_ n: Int) async rethrows -> AsyncDropFirstSequence` |
+| `prefix(while: (Element) async throws -> Bool) async rethrows -> AsyncPrefixWhileSequence` |
+| `prefix(_ n: Int) async rethrows -> AsyncPrefixSequence` |
+| `filter(_ predicate: (Element) async throws -> Bool) async rethrows -> AsyncFilterSequence` |
+
+<details>
+
+<summary>원문 보기</summary>
+
 These functions on `AsyncSequence` return a result which is itself an `AsyncSequence`. Due to the asynchronous nature of `AsyncSequence`, the behavior is similar in many ways to the existing `Lazy` types in the standard library. Calling these functions does not eagerly `await` the next value in the sequence, leaving it up to the caller to decide when to start that work by simply starting iteration when they are ready.
 
 As an example, let's look at `map`:
+
 
 ```swift
 extension AsyncSequence {
@@ -522,12 +626,6 @@ For each of these functions, we first define a type which conforms with the `Asy
 | `prefix(while: (Element) async throws -> Bool) async rethrows -> AsyncPrefixWhileSequence` |
 | `prefix(_ n: Int) async rethrows -> AsyncPrefixSequence` |
 | `filter(_ predicate: (Element) async throws -> Bool) async rethrows -> AsyncFilterSequence` |
-
-<details>
-
-<summary>원문 보기</summary>
-
-
 
 </details>
 
