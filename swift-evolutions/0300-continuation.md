@@ -1,10 +1,10 @@
 # Continuations for interfacing async tasks with synchronous code
 
-* Proposal: [SE-0300](0300-continuation.md)
-* Authors: [John McCall](https://github.com/rjmccall), [Joe Groff](https://github.com/jckarter), [Doug Gregor](https://github.com/DougGregor), [Konrad Malawski](https://github.com/ktoso)
-* Review Manager: [Ben Cohen](https://github.com/airspeedswift)
-* Status: **Implemented (Swift 5.5)**
-* Previous Revisions: [1](https://github.com/swiftlang/swift-evolution/blob/5f79481244329ec2860951c0c49c101aef5069e7/proposals/0300-continuation.md), [2](https://github.com/swiftlang/swift-evolution/blob/61c788cdb9674c99fc8731b49056cebcb5497edd/proposals/0300-continuation.md)
+* 제안: [SE-0300](0300-continuation.md)
+* 저자: [John McCall](https://github.com/rjmccall), [Joe Groff](https://github.com/jckarter), [Doug Gregor](https://github.com/DougGregor), [Konrad Malawski](https://github.com/ktoso)
+* 리뷰 매니저: [Ben Cohen](https://github.com/airspeedswift)
+* 상태: **구현됨 (Swift 5.5)**
+* 개정: [1](https://github.com/swiftlang/swift-evolution/blob/5f79481244329ec2860951c0c49c101aef5069e7/proposals/0300-continuation.md), [2](https://github.com/swiftlang/swift-evolution/blob/61c788cdb9674c99fc8731b49056cebcb5497edd/proposals/0300-continuation.md)
 
 ## Introduction
 

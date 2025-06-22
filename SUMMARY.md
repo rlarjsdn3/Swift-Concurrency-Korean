@@ -25,7 +25,7 @@
 
 * [0296-async-await](swift-evolutions/0296-async-await.md)
 * [0298-asyncsequence](swift-evolutions/0298-asyncsequence.md)
-<!--* [0300-continuation](swift-evolutions/0300-continuation.md)-->
+* [0300-continuation](swift-evolutions/0300-continuation.md)
 <!--* [0302-concurrent-value-and-concurrent-closures](swift-evolutions/0302-concurrent-value-and-concurrent-closures.md)-->
 <!--* [0304-structured-concurrency](swift-evolutions/0304-structured-concurrency.md)-->
 <!--* [0306-actors](swift-evolutions/0306-actors.md)-->
@@ -41,8 +41,4 @@
 <!--* [0381-task-group-discard-results](swift-evolutions/0381-task-group-discard-results.md)-->
 <!--* [0388-async-stream-factory](swift-evolutions/0388-async-stream-factory.md)-->
 <!--* [0392-custom-actor-executors](swift-evolutions/0392-custom-actor-executors.md)-->
-
-
-## Appendix
-
-* [참고 자료](appendix/Citations.md)
+<!--* [0392-custom-actor-executors](swift-evolutions/0392-custom-actor-executors.md)-->
